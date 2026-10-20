@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>どうぶつと はみがき</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#CDEFE8; --tile:#B9E4DB; --card:#FFFFFF; --ink:#24345E; --soft:#5B6B90;
+  --pink:#FF7FA6; --pink-deep:#E2557F; --lemon:#FFD84D; --lemon-ink:#6B5200;
+  --bear:#C98B56; --bear-dark:#8F5A2E; --muzzle:#F4D9B0; --mouth:#8C2E43; --tongue:#F48FA5;
+  --tooth:#FFFFFF; --tooth-line:#C9D3E3; --germ:#69C46A; --track:#E3F4F0; --chip:#EAF6FF;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F3036; --tile:#15404A; --card:#1B4952; --ink:#F3F8FF; --soft:#B7CCD8;
+    --track:#255A63; --chip:#21545E; --tooth-line:#9FB0C6; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F3036; --tile:#15404A; --card:#1B4952; --ink:#F3F8FF; --soft:#B7CCD8;
+  --track:#255A63; --chip:#21545E; --tooth-line:#9FB0C6; color-scheme:dark;
+}
+html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0; min-height:100%;
+  background-color:var(--bg);
+  background-image:
+    linear-gradient(var(--tile) 2px, transparent 2px),
+    linear-gradient(90deg, var(--tile) 2px, transparent 2px);
+  background-size:52px 52px;
+  color:var(--ink);
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  font-weight:700;
+}
+.wrap{ max-width:880px; margin:0 auto; padding:12px 14px 24px; }
+.top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+h1{ font-size:20px; font-weight:900; margin:0; letter-spacing:.04em; }
+.ghost{
+  font:inherit; font-size:14px; color:var(--ink); background:var(--card);
+  border:2px solid var(--tile); border-radius:999px; padding:6px 14px; cursor:pointer;
+}
+.stage{
+  display:grid; gap:12px;
+  grid-template-columns: 1.15fr 1fr;
+  grid-template-areas: "bear map" "guide guide";
+  align-items:stretch;
+}
+@media (min-width:760px){
+  .stage{ grid-template-columns: 1.2fr 1fr; grid-template-areas: "bear guide" "bear map"; }
+}
+.panel{ background:var(--card); border-radius:28px; padding:10px; position:relative; box-shadow:0 4px 0 var(--tile); }
+.bearbox{ grid-area:bear; display:flex; align-items:center; justify-content:center; }
+.bearbox svg{ width:100%; height:auto; max-height:420px; display:block; }
+.mapbox{ grid-area:map; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.mapbox svg{ width:100%; height:auto; max-height:320px; display:block; }
+.mapnote{ font-size:11px; color:var(--soft); margin:2px 0 0; text-align:center; font-weight:500; }
+.guide{ grid-area:guide; padding:14px 18px 16px; }
+
+.phases{ display:flex; gap:6px; list-style:none; padding:0; margin:0 0 6px; align-items:center; flex-wrap:wrap; }
+#phases2{ margin-bottom:10px; }
+.phases li{ font-size:13px; padding:4px 12px; border-radius:999px; background:var(--track); color:var(--soft); }
+.phases li.arrow{ background:none; padding:0; }
+.phases li.now{ background:var(--lemon); color:var(--lemon-ink); }
+.phases li.fin{ background:var(--track); color:var(--ink); }
+.phases li.fin::before{ content:"✓ "; }
+
+.stepno{ margin:0; font-size:14px; color:var(--soft); }
+#where{ margin:2px 0 6px; font-size:clamp(28px, 7.5vw, 42px); font-weight:900; line-height:1.25; }
+.chip{
+  display:inline-block; margin:0 0 6px; padding:4px 14px; border-radius:12px;
+  background:var(--chip); font-size:18px;
+}
+.chip[data-surf="out"]{ background:#FFE3EC; color:#A8244E; }
+.chip[data-surf="top"]{ background:#FFF2B8; color:#6B5200; }
+.chip[data-surf="in"]{ background:#DDEEFF; color:#1F4E8C; }
+#tip{ margin:4px 0 12px; font-size:18px; line-height:1.6; font-weight:500; }
+.bar{ height:14px; background:var(--track); border-radius:999px; overflow:hidden; }
+.bar span{ display:block; height:100%; width:0; background:var(--pink); border-radius:999px; }
+.remain{ margin:8px 0 0; font-size:15px; color:var(--soft); }
+.remain b{ font-size:22px; color:var(--ink); font-variant-numeric:tabular-nums; }
+
+.controls{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+.big{
+  font:inherit; font-weight:900; font-size:24px; color:#fff; background:var(--pink);
+  border:none; border-radius:999px; padding:16px 40px; cursor:pointer;
+  box-shadow:0 6px 0 var(--pink-deep); transition:transform .1s, box-shadow .1s;
+}
+.big:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--pink-deep); }
+.sub{
+  font:inherit; font-size:18px; color:var(--ink); background:var(--card);
+  border:3px solid var(--tile); border-radius:999px; padding:10px 22px; cursor:pointer;
+}
+button:focus-visible{ outline:4px solid var(--lemon); outline-offset:3px; }
+.count{ text-align:center; color:var(--soft); font-size:14px; margin:12px 0 0; font-weight:500; }
+
+/* countdown */
+.cd{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:120px; font-weight:900; color:var(--pink); pointer-events:none;
+  text-shadow:0 4px 0 var(--card);
+}
+.cd.pop{ animation:pop .9s ease-out; }
+@keyframes pop{ from{ transform:scale(1.6); opacity:0; } 30%{ opacity:1; } to{ transform:scale(1); opacity:.9; } }
+
+/* bear motion */
+#brushPos{ transition:transform .7s cubic-bezier(.45,1.35,.5,1); }
+.scrub{ animation:scrub .32s ease-in-out infinite alternate; animation-play-state:paused; }
+.scrub-sm{ animation:scrubsm .32s ease-in-out infinite alternate; animation-play-state:paused; }
+body.running .scrub, body.running .scrub-sm{ animation-play-state:running; }
+@keyframes scrub{ from{ transform:translateX(-8px); } to{ transform:translateX(8px); } }
+@keyframes scrubsm{ from{ transform:translateX(-3px); } to{ transform:translateX(3px); } }
+.foam{ opacity:0; transition:opacity .4s; }
+body.running .foam{ opacity:1; }
+.foam circle{ animation:bob 1.4s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
+.foam circle:nth-child(2){ animation-delay:.3s; } .foam circle:nth-child(3){ animation-delay:.6s; }
+@keyframes bob{ from{ transform:translateY(0) scale(1); } to{ transform:translateY(-4px) scale(1.15); } }
+.eye{ animation:blink 4.5s infinite; transform-box:fill-box; transform-origin:center; }
+@keyframes blink{ 0%,93%,100%{ transform:scaleY(1); } 96%{ transform:scaleY(.1); } }
+
+#mapBrush{ transition:transform .6s ease, opacity .3s; }
+.hl{ opacity:0; transition:opacity .3s; }
+.hl.on{ animation:pulse 1s ease-in-out infinite alternate; }
+@keyframes pulse{ from{ opacity:.4; } to{ opacity:.85; } }
+.germ{ transition:opacity .3s, transform .3s; }
+.spark{ opacity:0; transition:opacity .4s; }
+.spark.on{ opacity:1; }
+
+/* done */
+.done{
+  position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+  background:rgba(20,40,60,.45); padding:20px;
+}
+.done[hidden]{ display:none; }
+.donecard{
+  background:var(--card); border-radius:32px; padding:28px 26px; text-align:center; max-width:360px; width:100%;
+  box-shadow:0 8px 0 var(--tile); position:relative; overflow:hidden;
+}
+.donecard h2{ font-size:40px; margin:6px 0 8px; font-weight:900; color:var(--pink-deep); }
+.donecard p{ font-size:18px; margin:0 0 18px; line-height:1.6; }
+.stamp{ font-size:64px; line-height:1; }
+.star{ position:fixed; top:-30px; font-size:26px; color:var(--lemon); animation:fall 2.6s linear infinite; pointer-events:none; }
+@keyframes fall{ to{ transform:translateY(110vh) rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce){
+  .eye, .star, .foam circle, .hl.on, .cd.pop{ animation:none; }
+  .hl.on{ opacity:.7; }
+  #brushPos, #mapBrush{ transition:none; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <h1 id="appTitle">🐻 くまちゃんと はみがき</h1>
+    <button class="ghost" id="voiceBtn" aria-pressed="true">🔊 こえ あり</button>
+  </header>
+
+  <div class="stage">
+    <section class="panel bearbox" aria-label="くまちゃん">
+      <svg id="bear" viewBox="0 -50 320 350" role="img" aria-label="はみがきを する くまちゃん">
+        <defs>
+          <clipPath id="mouthClip"><ellipse cx="160" cy="205" rx="42" ry="30"/></clipPath>
+        </defs>
+        <g id="ears"></g>
+        <ellipse cx="160" cy="157" rx="126" ry="112" fill="var(--bear)" stroke="var(--bear-dark)" stroke-width="3"/>
+        <ellipse cx="160" cy="200" rx="76" ry="60" fill="var(--muzzle)"/>
+        <g id="extras"></g>
+        <g id="eyesOpen">
+          <g class="eye"><circle cx="110" cy="128" r="12" fill="#2A2233"/><circle cx="114" cy="123" r="4" fill="#fff"/></g>
+          <g class="eye"><circle cx="210" cy="128" r="12" fill="#2A2233"/><circle cx="214" cy="123" r="4" fill="#fff"/></g>
+        </g>
+        <g id="eyesHappy" style="display:none" stroke="#2A2233" stroke-width="6" fill="none" stroke-linecap="round">
+          <path d="M96 132 q14 -18 28 0"/><path d="M196 132 q14 -18 28 0"/>
+        </g>
+        <ellipse cx="86" cy="170" rx="17" ry="10" fill="#FF8FA8" opacity=".55"/>
+        <ellipse cx="234" cy="170" rx="17" ry="10" fill="#FF8FA8" opacity=".55"/>
+        <ellipse cx="160" cy="158" rx="16" ry="11" fill="var(--nose)"/>
+        <ellipse cx="155" cy="154" rx="5" ry="3" fill="#fff" opacity=".6"/>
+        <g id="over"></g>
+        <ellipse cx="160" cy="205" rx="42" ry="30" fill="var(--mouth)"/>
+        <g clip-path="url(#mouthClip)" id="mouthInside">
+          <ellipse cx="160" cy="214" rx="22" ry="9" fill="var(--tongue)"/>
+        </g>
+        <g id="brushPos" style="transform:translate(230px,262px) rotate(-70deg) scale(1,1)">
+          <g class="scrub">
+            <rect x="10" y="-5" width="92" height="10" rx="5" fill="var(--pink)"/>
+            <rect x="-18" y="-9" width="30" height="18" rx="7" fill="#fff" stroke="#8FC1F0" stroke-width="2.5"/>
+            <g fill="#7FB8EE">
+              <circle cx="-11" cy="-3.5" r="2.2"/><circle cx="-4" cy="-3.5" r="2.2"/><circle cx="3" cy="-3.5" r="2.2"/>
+              <circle cx="-11" cy="3.5" r="2.2"/><circle cx="-4" cy="3.5" r="2.2"/><circle cx="3" cy="3.5" r="2.2"/>
+            </g>
+            <g class="foam" fill="#fff" stroke="#D6E9FA" stroke-width="1">
+              <circle cx="-22" cy="-12" r="5"/><circle cx="-26" cy="6" r="4"/><circle cx="-14" cy="14" r="3.5"/>
+            </g>
+            <circle cx="104" cy="0" r="17" fill="var(--paw)" stroke="var(--bear-dark)" stroke-width="2.5"/>
+            <circle cx="104" cy="3" r="6" fill="#F2B6A0"/>
+          </g>
+        </g>
+      </svg>
+      <div class="cd" id="cd" aria-live="assertive"></div>
+    </section>
+
+    <section class="panel mapbox" aria-label="はの ちず">
+      <svg id="map" viewBox="0 0 240 300" role="img" aria-label="いま みがく ところ"></svg>
+      <p class="mapnote">かがみと おなじ むきだよ</p>
+    </section>
+
+    <section class="panel guide" aria-live="polite">
+      <ol class="phases" id="phases">
+        <li class="arrow">した</li>
+        <li data-ph="down-out">おもて</li><li class="arrow" aria-hidden="true">›</li>
+        <li data-ph="down-top">かむところ</li><li class="arrow" aria-hidden="true">›</li>
+        <li data-ph="down-in">うら</li>
+      </ol>
+      <ol class="phases" id="phases2">
+        <li class="arrow">うえ</li>
+        <li data-ph="up-out">おもて</li><li class="arrow" aria-hidden="true">›</li>
+        <li data-ph="up-top">かむところ</li><li class="arrow" aria-hidden="true">›</li>
+        <li data-ph="up-in">うら</li>
+      </ol>
+      <p class="stepno" id="stepNo">ぜんぶで 16かしょ</p>
+      <h2 id="where">はぶらし もったかな？</h2>
+      <p class="chip" id="surf" hidden></p>
+      <p id="tip">スタートを おすと、くまちゃんが いっしょに みがくよ。</p>
+      <div class="bar" aria-hidden="true"><span id="barFill"></span></div>
+      <p class="remain">のこり <b id="remain">3:04</b></p>
+    </section>
+  </div>
+
+  <div class="controls">
+    <button class="big" id="startBtn">はみがき スタート</button>
+    <button class="sub" id="pauseBtn" hidden>ちょっと まって</button>
+    <button class="sub" id="stopBtn" hidden>やめる</button>
+  </div>
+  <p class="count" id="countMsg"></p>
+</main>
+
+<div class="done" id="done" hidden>
+  <div class="donecard" role="dialog" aria-labelledby="doneTitle">
+    <div class="stamp">🦷✨</div>
+    <h2 id="doneTitle">ぴっかぴか！</h2>
+    <p id="doneMsg">ばいきん ぜんぶ やっつけたね。</p>
+    <button class="big" id="againBtn">とじる</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+
+  const ZONES = {
+    front:{ a:3, b:8 },
+    right:{ a:0, b:2 },
+    left:{ a:9, b:11 }
+  };
+  const SURF = {
+    out:{ label:"おもて（そとがわ）", k:1.3 },
+    top:{ label:"かむところ", k:1.0 },
+    in:{ label:"うら（うちがわ）", k:0.6 }
+  };
+  const TIP = {
+    outFront:"はぶらしを よこにして、こまかく こしこし。",
+    outSide:"はぶらしを はんたいがわから いれて、ほっぺの ほうを こしこし。",
+    top:"はぶらしを はんたいがわから いれて、みぞを まえ・うしろに ごしごし。いちばん おくの はも わすれずに。",
+    topFront:"まえばの さきっぽを よこに こしこし。",
+    inFront:"はぶらしを たてにして、かきだすように こしこし。",
+    inSide:"はぶらしを はんたいがわから いれて、べろの ほうを こしこし。"
+  };
+  function S(jaw, zone, surf, sec){
+    const tip = surf==="out" ? (zone==="front"?TIP.outFront:TIP.outSide)
+              : surf==="top" ? (zone==="front"?TIP.topFront:TIP.top)
+              : (zone==="front"?TIP.inFront:TIP.inSide);
+    return { jaw, zone, surf, sec, tip };
+  }
+  /* した → うえ。おもて・かむところ・うら を おく→まえ→おく で、
+     おわった ばしょから そのまま つづけて うごく（へびの ような じゅんばん） */
+  const SWEEP = ["right","front","left"];
+  const STEPS = [];
+  let dir = 1;
+  ["down","up"].forEach(jaw => {
+    ["out","top","in"].forEach(surf => {
+      const order = dir===1 ? SWEEP : SWEEP.slice().reverse();
+      order.forEach(zone => STEPS.push(S(jaw, zone, surf, (zone==="front" && surf==="out") ? 12 : 10)));
+      dir *= -1;
+    });
+  });
+  const starts = []; let acc = 0;
+  STEPS.forEach(s => { starts.push(acc); acc += s.sec; });
+  const TOTAL = acc;
+
+  function title(s){
+    const jaw = s.jaw==="up" ? "うえ" : "した";
+    if(s.zone==="front") return jaw + "の まえば";
+    return (s.zone==="right" ? "みぎ " : "ひだり ") + jaw + "の おくば";
+  }
+  const fmt = sec => { sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec/60) + ":" + String(sec%60).padStart(2,"0"); };
+
+  /* ---------- animals ---------- */
+  const PINK = "#F7B3C6";
+  const ANIMALS = [
+    { name:"くまちゃん", emoji:"🐻",
+      c:{ bear:"#C98B56", dark:"#8F5A2E", muzzle:"#F4D9B0", paw:"#C98B56", nose:"#3A2A2A" },
+      ears:`<circle cx="78" cy="70" r="38" fill="var(--bear)" stroke="var(--bear-dark)" stroke-width="3"/><circle cx="78" cy="72" r="20" fill="#F2B6A0"/>
+            <circle cx="242" cy="70" r="38" fill="var(--bear)" stroke="var(--bear-dark)" stroke-width="3"/><circle cx="242" cy="72" r="20" fill="#F2B6A0"/>`,
+      extras:"", over:"" },
+    { name:"うさちゃん", emoji:"🐰",
+      c:{ bear:"#FBF7FA", dark:"#BFA9B8", muzzle:"#FFFFFF", paw:"#FBF7FA", nose:"#F07A9A" },
+      ears:`<ellipse cx="112" cy="18" rx="25" ry="66" transform="rotate(-12 112 18)" fill="var(--bear)" stroke="var(--bear-dark)" stroke-width="3"/>
+            <ellipse cx="112" cy="24" rx="11" ry="48" transform="rotate(-12 112 24)" fill="${PINK}"/>
+            <ellipse cx="208" cy="18" rx="25" ry="66" transform="rotate(12 208 18)" fill="var(--bear)" stroke="var(--bear-dark)" stroke-width="3"/>
+            <ellipse cx="208" cy="24" rx="11" ry="48" transform="rotate(12 208 24)" fill="${PINK}"/>`,
+      extras:"", over:"" },
+    { name:"ねこちゃん", emoji:"🐱",
+      c:{ bear:"#F2A65A", dark:"#B86A26", muzzle:"#FFE9CF", paw:"#F2A65A", nose:"#F07A9A" },
+      ears:`<path d="M56 112 L68 14 L142 60 Z" fill="var(--bear)" stroke="var(--bear-dark)" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M76 90 L80 40 L120 64 Z" fill="${PINK}"/>
+            <path d="M264 112 L252 14 L178 60 Z" fill="var(--bear)" stroke="var(--bear-dark)" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M244 90 L240 40 L200 64 Z" fill="${PINK}"/>`,
+      extras:`<g stroke="var(--bear-dark)" stroke-width="6" stroke-linecap="round"><path d="M160 50 v24"/><path d="M138 54 l5 20"/><path d="M182 54 l-5 20"/></g>`,
+      over:`<g stroke="var(--bear-dark)" stroke-width="2.5" stroke-linecap="round"><path d="M104 186 L50 176"/><path d="M104 196 L48 198"/><path d="M216 186 L270 176"/><path d="M216 196 L272 198"/></g>` },
+    { name:"パンダちゃん", emoji:"🐼",
+      c:{ bear:"#FAFAFA", dark:"#555555", muzzle:"#FFFFFF", paw:"#2B2B2B", nose:"#2B2B2B" },
+      ears:`<circle cx="80" cy="68" r="36" fill="#2B2B2B"/><circle cx="240" cy="68" r="36" fill="#2B2B2B"/>`,
+      extras:`<ellipse cx="108" cy="134" rx="25" ry="32" transform="rotate(28 108 134)" fill="#2B2B2B"/>
+              <ellipse cx="212" cy="134" rx="25" ry="32" transform="rotate(-28 212 134)" fill="#2B2B2B"/>
+              <circle cx="110" cy="128" r="15" fill="#fff"/><circle cx="210" cy="128" r="15" fill="#fff"/>`,
+      over:"" },
+    { name:"わんちゃん", emoji:"🐶",
+      c:{ bear:"#F0D3A6", dark:"#A8703C", muzzle:"#FFF6E8", paw:"#F0D3A6", nose:"#3A2A2A" },
+      ears:"",
+      extras:`<ellipse cx="212" cy="124" rx="30" ry="25" fill="#C98A4E"/>
+              <ellipse cx="52" cy="128" rx="30" ry="62" transform="rotate(18 52 128)" fill="#8B5A2B"/>
+              <ellipse cx="268" cy="128" rx="30" ry="62" transform="rotate(-18 268 128)" fill="#8B5A2B"/>`,
+      over:`<path d="M160 232 q0 20 -10 22" stroke="none"/>` }
+  ];
+  let animal = ANIMALS[0], lastAnimal = -1;
+  function pickAnimal(){
+    let i;
+    do{ i = Math.floor(Math.random()*ANIMALS.length); }while(i===lastAnimal && ANIMALS.length>1);
+    lastAnimal = i; animal = ANIMALS[i];
+    const svg = $("bear");
+    svg.style.setProperty("--bear", animal.c.bear);
+    svg.style.setProperty("--bear-dark", animal.c.dark);
+    svg.style.setProperty("--muzzle", animal.c.muzzle);
+    svg.style.setProperty("--paw", animal.c.paw);
+    svg.style.setProperty("--nose", animal.c.nose);
+    $("ears").innerHTML = animal.ears;
+    $("extras").innerHTML = animal.extras;
+    $("over").innerHTML = animal.over;
+    svg.setAttribute("aria-label", `はみがきを する ${animal.name}`);
+    $("appTitle").textContent = `${animal.emoji} ${animal.name}と はみがき`;
+  }
+
+  /* ---------- bear teeth ---------- */
+  const mouth = $("mouthInside");
+  for(let i=0;i<7;i++){
+    const up = document.createElementNS(NS,"rect");
+    up.setAttribute("x", 117 + i*12.5); up.setAttribute("y", 170);
+    up.setAttribute("width", 11.5); up.setAttribute("height", 19); up.setAttribute("rx", 4);
+    up.setAttribute("fill","#fff");
+    mouth.appendChild(up);
+    const dn = document.createElementNS(NS,"rect");
+    dn.setAttribute("x", 123 + i*11.5); dn.setAttribute("y", 223);
+    dn.setAttribute("width", 10.5); dn.setAttribute("height", 16); dn.setAttribute("rx", 4);
+    dn.setAttribute("fill","#fff");
+    mouth.appendChild(dn);
+  }
+
+  function bearPose(s){
+    const up = s.jaw==="up";
+    const side = s.zone==="right" ? 1 : s.zone==="left" ? -1 : 0;
+    let x=160, y = up?189:222, r=0;
+    if(s.surf==="out" && side){ x = 160 + side*34; }
+    if(s.surf==="top"){ x = 160 + side*28; y = up?196:214; r = side*-10; }
+    if(s.surf==="top" && !side){ x = 160; y = up?193:217; r = 0; }
+    if(s.surf==="in"){
+      if(!side){ y = up?196:214; r = up?75:-40; }
+      else { x = 160 + side*20; y = up?196:214; r = side*8; }
+    }
+    // おくばは はんたいがわから いれる（みぎの おくば → えは ひだりから）
+    return { x, y, r, flip: side>0 ? -1 : 1 };
+  }
+  function setBrush(p){
+    $("brushPos").style.transform = `translate(${p.x}px,${p.y}px) rotate(${p.r}deg) scale(${p.flip},1)`;
+  }
+  const IDLE = { x:230, y:262, r:-70, flip:1 };
+
+  /* ---------- map ---------- */
+  const map = $("map");
+  const M = { cx:120, rx:70, ry:60, up:132, down:172 };
+  const th = i => (i+0.5)/12*Math.PI;
+  function pt(jaw, t, k){
+    const cy = M[jaw];
+    const x = M.cx + M.rx*k*Math.cos(t);
+    const y = jaw==="up" ? cy - M.ry*k*Math.sin(t) : cy + M.ry*k*Math.sin(t);
+    return [x,y];
+  }
+  function el(tag, attrs, parent){
+    const e = document.createElementNS(NS, tag);
+    for(const k in attrs) e.setAttribute(k, attrs[k]);
+    (parent||map).appendChild(e); return e;
+  }
+  const lbl = { "font-size":13, fill:"var(--soft)", "font-family":"inherit", "font-weight":700, "text-anchor":"middle" };
+  el("text", Object.assign({x:120, y:28}, lbl)).textContent = "うえの は";
+  el("text", Object.assign({x:120, y:290}, lbl)).textContent = "したの は";
+  el("text", Object.assign({x:224, y:154, "font-size":11}, lbl)).textContent = "みぎ";
+  el("text", Object.assign({x:18, y:154, "font-size":11}, lbl)).textContent = "ひだり";
+
+  const gHl = el("g", {});
+  const gTeeth = el("g", {});
+  const gTop = el("g", {});
+  const gGerm = el("g", {});
+  const stepEls = [];
+
+  ["up","down"].forEach(jaw => {
+    for(let i=0;i<12;i++){
+      const [x,y] = pt(jaw, th(i), 1);
+      const back = i<3 || i>8;
+      el("ellipse", { cx:x, cy:y, rx: back?9:7, ry: back?9:6.5, fill:"var(--tooth)", stroke:"var(--tooth-line)", "stroke-width":1.5 }, gTeeth);
+    }
+  });
+
+  STEPS.forEach((s, idx) => {
+    const z = ZONES[s.zone], k = SURF[s.surf].k;
+    const t0 = th(z.a) - 0.14, t1 = th(z.b) + 0.14;
+    let pts = [];
+    for(let j=0;j<=16;j++){ pts.push(pt(s.jaw, t0 + (t1-t0)*j/16, k).join(",")); }
+    const hl = el("polyline", {
+      points: pts.join(" "), fill:"none", "stroke-linecap":"round", "stroke-linejoin":"round",
+      stroke:"var(--lemon)", "stroke-width": s.surf==="top" ? 22 : 10, class:"hl"
+    }, s.surf==="top" ? gTop : gHl);
+    const germs = [], sparks = [];
+    [0.2, 0.8].forEach(f => {
+      const t = th(z.a) + (th(z.b) - th(z.a))*f;
+      const [x,y] = pt(s.jaw, t, k);
+      const g = el("g", { class:"germ", transform:`translate(${x} ${y})` }, gGerm);
+      [[0,-7],[7,0],[0,7],[-7,0]].forEach(([dx,dy]) => el("circle",{cx:dx,cy:dy,r:1.8,fill:"var(--germ)"},g));
+      el("circle", { r:5.5, fill:"var(--germ)" }, g);
+      el("circle", { cx:-2, cy:-1, r:1.2, fill:"#1D3B1D" }, g);
+      el("circle", { cx:2, cy:-1, r:1.2, fill:"#1D3B1D" }, g);
+      germs.push(g);
+      const sp = el("text", { x, y:y+4, "text-anchor":"middle", "font-size":12, fill:"#F5B800", class:"spark" }, gGerm);
+      sp.textContent = "✦";
+      sparks.push(sp);
+    });
+    stepEls.push({ hl, germs, sparks });
+  });
+
+  const mb = el("g", { id:"mapBrush", style:"opacity:0" });
+  const mbi = el("g", { class:"scrub-sm" }, mb);
+  el("rect", { x:8, y:-2.5, width:28, height:5, rx:2.5, fill:"var(--pink)" }, mbi);
+  el("rect", { x:-9, y:-5, width:18, height:10, rx:3.5, fill:"#fff", stroke:"var(--pink-deep)", "stroke-width":2 }, mbi);
+
+  function placeMapBrush(s){
+    const z = ZONES[s.zone], k = SURF[s.surf].k;
+    const t = (th(z.a) + th(z.b))/2;
+    const [x,y] = pt(s.jaw, t, k);
+    const dx = -M.rx*Math.sin(t), dy = (s.jaw==="up" ? -1 : 1) * M.ry*Math.cos(t);
+    let ang = Math.atan2(dy, dx) * 180/Math.PI;
+    if(s.zone==="front" && s.surf==="in") ang += 90;
+    if(s.zone==="left") ang += 180; // えを まえば・はんたいがわへ むける
+    mb.style.transform = `translate(${x}px,${y}px) rotate(${ang}deg)`;
+    mb.style.opacity = 1;
+  }
+
+  /* ---------- sound & voice ---------- */
+  let voiceOn = true, actx = null;
+  function say(text){
+    if(!voiceOn || !("speechSynthesis" in window)) return;
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ja-JP"; u.rate = 1; u.pitch = 1.25;
+      const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith("ja"));
+      if(v) u.voice = v;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  function chime(high){
+    if(!actx) return;
+    try{
+      const notes = high ? [784, 988, 1319] : [659, 880];
+      notes.forEach((f, i) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = "sine"; o.frequency.value = f;
+        const t = actx.currentTime + i*0.12;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.18, t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+0.35);
+        o.connect(g).connect(actx.destination); o.start(t); o.stop(t+0.4);
+      });
+    }catch(e){}
+  }
+  $("voiceBtn").addEventListener("click", () => {
+    voiceOn = !voiceOn;
+    $("voiceBtn").setAttribute("aria-pressed", voiceOn);
+    $("voiceBtn").textContent = voiceOn ? "🔊 こえ あり" : "🔈 こえ なし";
+    if(!voiceOn && "speechSynthesis" in window) speechSynthesis.cancel();
+  });
+
+  /* ---------- keep screen awake ---------- */
+  let wake = null;
+  async function keepAwake(){
+    try{ if("wakeLock" in navigator) wake = await navigator.wakeLock.request("screen"); }catch(e){}
+  }
+  function releaseAwake(){ try{ wake && wake.release(); }catch(e){} wake = null; }
+  document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState==="visible" && (state==="run" || state==="count")) keepAwake();
+  });
+
+  /* ---------- log ---------- */
+  function readLog(){
+    try{ return JSON.parse(localStorage.getItem("kuma-hamigaki") || '{"count":0}'); }catch(e){ return { count:0 }; }
+  }
+  function writeLog(l){ try{ localStorage.setItem("kuma-hamigaki", JSON.stringify(l)); }catch(e){} }
+  function showCount(){
+    const n = readLog().count || 0;
+    $("countMsg").textContent = n ? `これまでに ${n}かい ぴかぴかに したよ` : "";
+  }
+
+  /* ---------- run ---------- */
+  let state = "idle", elapsed = 0, last = 0, cur = -1, cdTimer = null;
+
+  function setPhases(key, finishedAll){
+    const order = ["down-out","down-top","down-in","up-out","up-top","up-in"], ci = order.indexOf(key);
+    document.querySelectorAll(".phases li[data-ph]").forEach(li => {
+      const i = order.indexOf(li.dataset.ph);
+      li.classList.toggle("now", !finishedAll && i===ci);
+      li.classList.toggle("fin", finishedAll || (ci>=0 && i<ci));
+    });
+  }
+
+  function markDone(i){
+    stepEls[i].hl.classList.remove("on");
+    stepEls[i].germs.forEach(g => { g.style.opacity = 0; });
+    stepEls[i].sparks.forEach(sp => sp.classList.add("on"));
+  }
+
+  function enterStep(i){
+    for(let j=0;j<i;j++) markDone(j);
+    cur = i;
+    const s = STEPS[i];
+    stepEls.forEach((e,j) => e.hl.classList.toggle("on", j===i));
+    setBrush(bearPose(s));
+    placeMapBrush(s);
+    $("stepNo").textContent = `${i+1} / ${STEPS.length}`;
+    $("where").textContent = title(s);
+    $("surf").hidden = false;
+    $("surf").textContent = SURF[s.surf].label;
+    $("surf").dataset.surf = s.surf;
+    $("tip").textContent = s.tip;
+    setPhases(s.jaw + "-" + s.surf, false);
+    chime(false);
+    const sayTip = s.tip.split("。")[0];
+    say(`${title(s)}の ${SURF[s.surf].label.replace(/（.*）/,"")}。${sayTip}`);
+  }
+
+  function tick(now){
+    if(state!=="run") return;
+    const dt = Math.min(0.5, (now - last)/1000);
+    last = now; elapsed += dt;
+    if(elapsed >= TOTAL){ finish(); return; }
+    let i = STEPS.length - 1;
+    while(i>0 && starts[i] > elapsed) i--;
+    if(i !== cur) enterStep(i);
+    const p = Math.min(1, (elapsed - starts[i]) / STEPS[i].sec);
+    $("barFill").style.width = (p*100) + "%";
+    stepEls[i].germs.forEach(g => { g.style.opacity = (1 - p*0.85).toFixed(2); });
+    $("remain").textContent = fmt(TOTAL - elapsed);
+    requestAnimationFrame(tick);
+  }
+
+  function reset(){
+    state = "idle"; elapsed = 0; cur = -1;
+    pickAnimal();
+    clearTimeout(cdTimer);
+    document.body.classList.remove("running");
+    stepEls.forEach(e => {
+      e.hl.classList.remove("on");
+      e.germs.forEach(g => g.style.opacity = 1);
+      e.sparks.forEach(sp => sp.classList.remove("on"));
+    });
+    setBrush(IDLE); mb.style.opacity = 0;
+    $("eyesOpen").style.display = ""; $("eyesHappy").style.display = "none";
+    $("stepNo").textContent = `ぜんぶで ${STEPS.length}かしょ`;
+    $("where").textContent = "はぶらし もったかな？";
+    $("surf").hidden = true;
+    $("tip").textContent = `スタートを おすと、${animal.name}が いっしょに みがくよ。`;
+    $("barFill").style.width = "0%";
+    $("remain").textContent = fmt(TOTAL);
+    $("cd").textContent = "";
+    setPhases(null, false);
+    $("startBtn").hidden = false; $("pauseBtn").hidden = true; $("stopBtn").hidden = true;
+    $("pauseBtn").textContent = "ちょっと まって";
+    releaseAwake(); showCount();
+  }
+
+  function countdown(n){
+    const cd = $("cd");
+    cd.classList.remove("pop"); void cd.offsetWidth; cd.classList.add("pop");
+    cd.textContent = n;
+    chime(false);
+    if(n > 1){ cdTimer = setTimeout(() => countdown(n-1), 1000); }
+    else {
+      cdTimer = setTimeout(() => {
+        cd.textContent = "";
+        state = "run"; document.body.classList.add("running");
+        last = performance.now(); requestAnimationFrame(tick);
+      }, 1000);
+    }
+  }
+
+  $("startBtn").addEventListener("click", () => {
+    try{ actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume && actx.resume(); }catch(e){}
+    say("じゅんびは いいかな？ さん、に、いち");
+    state = "count";
+    $("startBtn").hidden = true; $("pauseBtn").hidden = false; $("stopBtn").hidden = false;
+    $("where").textContent = "いっしょに みがこう！";
+    keepAwake();
+    countdown(3);
+  });
+
+  $("pauseBtn").addEventListener("click", () => {
+    if(state==="run"){
+      state = "pause"; document.body.classList.remove("running");
+      if("speechSynthesis" in window) speechSynthesis.cancel();
+      $("pauseBtn").textContent = "つづける";
+    } else if(state==="pause"){
+      state = "run"; document.body.classList.add("running");
+      $("pauseBtn").textContent = "ちょっと まって";
+      last = performance.now(); requestAnimationFrame(tick);
+    }
+  });
+
+  $("stopBtn").addEventListener("click", () => {
+    if("speechSynthesis" in window) speechSynthesis.cancel();
+    reset();
+  });
+
+  function finish(){
+    state = "done";
+    for(let j=0;j<STEPS.length;j++) markDone(j);
+    document.body.classList.remove("running");
+    mb.style.opacity = 0;
+    setBrush(IDLE);
+    $("eyesOpen").style.display = "none"; $("eyesHappy").style.display = "";
+    $("barFill").style.width = "100%"; $("remain").textContent = "0:00";
+    setPhases(null, true);
+    $("where").textContent = "ぴっかぴか！";
+    $("surf").hidden = true;
+    $("tip").textContent = "よく がんばったね。";
+    const log = readLog(); log.count = (log.count || 0) + 1; writeLog(log);
+    $("doneMsg").textContent = `${animal.name}と いっしょに ばいきん ぜんぶ やっつけたね。これで ${log.count}かいめ！`;
+    $("done").hidden = false;
+    chime(true);
+    say("ぴっかぴか！ よく がんばったね");
+    if(!matchMedia("(prefers-reduced-motion: reduce)").matches){
+      for(let i=0;i<14;i++){
+        const st = document.createElement("span");
+        st.className = "star"; st.textContent = i%3 ? "★" : "✦";
+        st.style.left = (Math.random()*100) + "vw";
+        st.style.animationDelay = (Math.random()*2) + "s";
+        st.style.color = ["#FFD84D","#FF7FA6","#7FB8EE"][i%3];
+        document.body.appendChild(st);
+      }
+    }
+    releaseAwake();
+    $("againBtn").focus();
+  }
+
+  $("againBtn").addEventListener("click", () => {
+    $("done").hidden = true;
+    document.querySelectorAll(".star").forEach(s => s.remove());
+    reset();
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>
