@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>くまくんと トイレ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#DDEBFF; --tile:#C7DBF7; --card:#FFFFFF; --ink:#24345E; --soft:#5B6B90;
+  --pink:#FF7FA6; --pink-deep:#E2557F; --lemon:#FFD84D; --lemon-ink:#6B5200;
+  --blue:#4FA3E8; --blue-deep:#2F7CC0; --track:#EAF2FF; --hint:#FFF6D6; --hint-ink:#6B5200;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13233F; --tile:#1D3358; --card:#22395F; --ink:#F3F8FF; --soft:#B7C6DE;
+    --track:#2B4670; --hint:#3A3A26; --hint-ink:#FFE9A3; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13233F; --tile:#1D3358; --card:#22395F; --ink:#F3F8FF; --soft:#B7C6DE;
+  --track:#2B4670; --hint:#3A3A26; --hint-ink:#FFE9A3; color-scheme:dark;
+}
+html{ height:100%; }
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0; min-height:100%;
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(var(--tile) 3px, transparent 3.5px);
+  background-size:36px 36px;
+  color:var(--ink);
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  font-weight:700;
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{ max-width:960px; margin:0 auto; padding:12px 16px 24px; }
+.top{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+h1{ font-size:20px; font-weight:900; margin:0; letter-spacing:.04em; }
+.tools{ display:flex; gap:8px; }
+.ghost{
+  font:inherit; font-size:14px; color:var(--ink); background:var(--card);
+  border:2px solid var(--tile); border-radius:999px; padding:6px 14px; cursor:pointer;
+}
+
+/* progress */
+.steps{ display:flex; gap:6px; list-style:none; padding:0; margin:0 0 10px; justify-content:center; flex-wrap:wrap; }
+.steps li{
+  display:flex; align-items:center; gap:4px;
+  font-size:14px; padding:6px 12px; border-radius:999px; background:var(--card); color:var(--soft);
+  border:2px solid var(--tile);
+}
+.steps li .n{ display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--track); font-size:13px; }
+.steps li.now{ background:var(--lemon); color:var(--lemon-ink); border-color:var(--lemon); transform:scale(1.08); }
+.steps li.now .n{ background:#fff; }
+.steps li.fin{ color:var(--ink); }
+.steps li.fin .n{ background:var(--pink); color:#fff; }
+.steps li.fin .n::before{ content:"★"; }
+.steps li.fin .n span{ display:none; }
+.steps li.got{ animation:got .7s cubic-bezier(.3,1.8,.5,1); }
+@keyframes got{ 0%{ transform:scale(.6); } 60%{ transform:scale(1.3); } 100%{ transform:scale(1); } }
+
+.stage{ display:grid; gap:12px; grid-template-columns:1fr; }
+@media (min-width:780px){ .stage{ grid-template-columns:1.35fr 1fr; align-items:start; } } }
+.panel{ background:var(--card); border-radius:28px; padding:10px; position:relative; box-shadow:0 5px 0 var(--tile); }
+.scenebox{ overflow:hidden; padding:0; }
+.scenebox svg{ width:100%; height:auto; display:block; border-radius:28px; }
+.guide{ padding:16px 18px 18px; display:flex; flex-direction:column; }
+.stepno{ margin:0; font-size:15px; color:var(--soft); }
+#title{ margin:2px 0 6px; font-size:clamp(30px, 8vw, 44px); font-weight:900; line-height:1.2; }
+#tip{ margin:4px 0 10px; font-size:19px; line-height:1.7; font-weight:700; }
+.turn{
+  margin:0 0 10px; font-size:20px; font-weight:900; color:var(--pink-deep);
+  min-height:1.5em;
+}
+.turn.wait{ color:var(--soft); }
+.turn.go{ animation:bob 1s ease-in-out infinite; }
+@keyframes bob{ 50%{ transform:translateY(-4px); } }
+.hint{
+  margin:0 0 14px; font-size:13px; line-height:1.6; font-weight:500;
+  background:var(--hint); color:var(--hint-ink); border-radius:14px; padding:8px 12px;
+}
+.controls{ display:flex; gap:10px; flex-wrap:wrap; margin-top:auto; }
+.big, .sub{
+  font:inherit; font-weight:900; border:none; border-radius:999px; cursor:pointer;
+  transition:transform .1s, box-shadow .1s, opacity .2s;
+  flex:1 1 180px; min-height:64px;
+}
+.big{ font-size:24px; color:#fff; background:var(--pink); padding:14px 22px; box-shadow:0 6px 0 var(--pink-deep); }
+.big:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--pink-deep); }
+.sub{ font-size:21px; color:#fff; background:var(--blue); padding:14px 22px; box-shadow:0 6px 0 var(--blue-deep); }
+.sub:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--blue-deep); }
+.big:disabled, .sub:disabled{ opacity:.35; cursor:default; transform:none; }
+.big.ready{ animation:pulse 1.2s ease-in-out infinite; }
+@keyframes pulse{ 50%{ transform:scale(1.05); } }
+button:focus-visible{ outline:4px solid var(--lemon); outline-offset:3px; }
+
+/* svg motion helpers */
+#scene .mv{ transform-box:view-box; transform-origin:0 0; }
+#scene .ctr{ transform-box:fill-box; transform-origin:center; }
+
+/* confetti */
+.confetti{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:20; }
+.confetti i{
+  position:absolute; top:-20px; width:12px; height:16px; border-radius:3px;
+  animation:fall linear forwards;
+}
+@keyframes fall{ to{ transform:translateY(110vh) rotate(720deg); } }
+
+/* overlays */
+.over{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(20,40,70,.5); padding:20px; z-index:10;
+}
+.over[hidden]{ display:none; }
+.card{
+  background:var(--card); border-radius:32px; padding:28px 24px; text-align:center; max-width:400px; width:100%;
+  box-shadow:0 8px 0 var(--tile);
+}
+.card h2{ font-size:34px; margin:6px 0 8px; font-weight:900; color:var(--pink-deep); line-height:1.3; }
+.card p{ font-size:18px; margin:0 0 18px; line-height:1.6; }
+.card .big{ width:100%; flex:none; }
+.emoji{ font-size:64px; line-height:1.1; }
+.starrow{ font-size:40px; letter-spacing:4px; margin:4px 0 8px; }
+.starrow span{ display:inline-block; opacity:0; color:#FFC21A; }
+.starrow span.on{ animation:starin .5s cubic-bezier(.3,1.8,.5,1) forwards; }
+@keyframes starin{ from{ opacity:0; transform:scale(.2) rotate(-90deg); } to{ opacity:1; transform:none; } }
+.tally{ font-size:14px !important; color:var(--soft); margin:12px 0 0 !important; font-weight:500; }
+
+@media (prefers-reduced-motion: reduce){
+  .turn.go, .big.ready, .steps li.got{ animation:none; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <h1>🐻 くまくんと トイレ</h1>
+    <div class="tools">
+      <button class="ghost" id="soundBtn" aria-pressed="true">🔊 おと あり</button>
+      <button class="ghost" id="restartBtn">↺ さいしょから</button>
+    </div>
+  </header>
+
+  <ol class="steps" id="steps" aria-label="すすみぐあい"></ol>
+
+  <div class="stage">
+    <section class="panel scenebox" aria-label="くまくん">
+      <svg id="scene" viewBox="0 0 420 330" role="img" aria-label="くまくんが トイレに いく ようす">
+        <defs>
+          <pattern id="tiles" width="30" height="30" patternUnits="userSpaceOnUse">
+            <rect width="30" height="30" fill="#EAF5FF"/>
+            <path d="M30 0V30M0 30H30" stroke="#D3E6F8" stroke-width="2"/>
+          </pattern>
+        </defs>
+
+        <!-- room -->
+        <rect width="420" height="292" fill="url(#tiles)"/>
+        <rect y="286" width="420" height="8" fill="#BFD6EE"/>
+        <rect y="294" width="420" height="36" fill="#F6D9A8"/>
+        <path d="M0 312H420" stroke="#EAC68B" stroke-width="2"/>
+
+        <!-- toilet paper -->
+        <g>
+          <rect x="384" y="176" width="34" height="8" rx="4" fill="#B8C6DA"/>
+          <rect x="390" y="190" width="22" height="44" fill="#fff" stroke="#DCE4EF" stroke-width="2"/>
+          <circle cx="401" cy="190" r="15" fill="#fff" stroke="#DCE4EF" stroke-width="2"/>
+          <circle cx="401" cy="190" r="5" fill="#E6D3B3"/>
+        </g>
+
+        <!-- toilet -->
+        <g>
+          <rect x="286" y="130" width="68" height="80" rx="10" fill="#fff" stroke="#B8C6DA" stroke-width="3"/>
+          <rect x="280" y="122" width="80" height="14" rx="7" fill="#fff" stroke="#B8C6DA" stroke-width="3"/>
+          <g transform="translate(290,150)"><g id="lever" class="mv">
+            <rect x="-24" y="-4" width="26" height="8" rx="4" fill="#9FB0C6"/>
+            <circle cx="-22" cy="0" r="6" fill="#B8C6DA" stroke="#9FB0C6" stroke-width="2"/>
+          </g></g>
+          <path d="M264 210 Q266 252 296 266 L300 300 H340 L344 266 Q374 252 376 210 Z" fill="#fff" stroke="#B8C6DA" stroke-width="3"/>
+          <ellipse cx="320" cy="209" rx="58" ry="13" fill="#fff" stroke="#B8C6DA" stroke-width="3"/>
+          <ellipse cx="320" cy="206" rx="50" ry="11" fill="#9FBBD0" stroke="#7896B0" stroke-width="2"/>
+          <ellipse cx="320" cy="205" rx="30" ry="5" fill="#DCE8F2"/>
+        </g>
+
+        <!-- laundry basket -->
+        <g>
+          <g id="basketPants" style="opacity:0">
+            <path d="M28 268 Q30 252 44 254 L50 262 L58 250 Q68 252 64 268 Z" fill="#4A7BD0" stroke="#3A63AE" stroke-width="2"/>
+          </g>
+          <rect x="16" y="262" width="58" height="40" rx="8" fill="#E8B86A" stroke="#C98F45" stroke-width="2.5"/>
+          <path d="M18 276H72M18 290H72M30 264V300M45 264V300M60 264V300" stroke="#C98F45" stroke-width="2" opacity=".7"/>
+          <rect x="13" y="259" width="64" height="8" rx="4" fill="#D9A256" stroke="#C98F45" stroke-width="2"/>
+        </g>
+
+        <!-- trash bin -->
+        <g>
+          <g id="binDiaper" style="opacity:0">
+            <path d="M92 270 Q94 254 106 256 Q118 254 120 270 Z" fill="#fff" stroke="#C9D3E3" stroke-width="2"/>
+            <circle cx="102" cy="262" r="2.5" fill="#FFB84D"/><circle cx="111" cy="264" r="2.5" fill="#7EC8F5"/>
+          </g>
+          <path d="M87 268 H125 L120 302 H92 Z" fill="#FF9EBB" stroke="#E2557F" stroke-width="2.5"/>
+          <rect x="83" y="263" width="46" height="9" rx="4" fill="#FF7FA6" stroke="#E2557F" stroke-width="2"/>
+        </g>
+
+        <!-- bear -->
+        <g transform="translate(180,300)">
+          <g id="bearMove" class="mv"><g id="bearJump" class="mv">
+            <g id="standLegs">
+              <rect x="-30" y="-46" width="24" height="44" rx="11" fill="#C98B56"/>
+              <rect x="6" y="-46" width="24" height="44" rx="11" fill="#C98B56"/>
+              <ellipse cx="-19" cy="-3" rx="16" ry="8" fill="#B37843"/>
+              <ellipse cx="19" cy="-3" rx="16" ry="8" fill="#B37843"/>
+            </g>
+            <ellipse cx="0" cy="-46" rx="35" ry="21" fill="#C98B56"/>
+            <g id="sitLegs" style="opacity:0">
+              <rect x="-42" y="-40" width="24" height="52" rx="11" fill="#C98B56"/>
+              <rect x="18" y="-40" width="24" height="52" rx="11" fill="#C98B56"/>
+              <ellipse cx="-31" cy="12" rx="15" ry="8" fill="#B37843"/>
+              <ellipse cx="31" cy="12" rx="15" ry="8" fill="#B37843"/>
+              <ellipse cx="-30" cy="-38" rx="17" ry="14" fill="#D49A66"/>
+              <ellipse cx="30" cy="-38" rx="17" ry="14" fill="#D49A66"/>
+            </g>
+            <g id="diaper" class="mv">
+              <path d="M-38 -68 H38 V-50 Q38 -30 14 -27 Q0 -24 -14 -27 Q-38 -30 -38 -50 Z" fill="#fff" stroke="#C9D3E3" stroke-width="2"/>
+              <rect x="-38" y="-68" width="76" height="7" rx="3" fill="#BFE3FF"/>
+              <circle cx="-20" cy="-48" r="3" fill="#FFB84D"/><circle cx="0" cy="-42" r="3" fill="#7EC8F5"/><circle cx="20" cy="-48" r="3" fill="#FF9EBB"/>
+            </g>
+            <g id="pants" class="mv">
+              <path d="M-40 -70 H40 L37 -6 H6 L2 -38 H-2 L-6 -6 H-37 Z" fill="#4A7BD0" stroke="#3A63AE" stroke-width="2" stroke-linejoin="round"/>
+              <rect x="-40" y="-73" width="80" height="9" rx="4" fill="#3A63AE"/>
+              <path d="M-28 -12 H-14 M14 -12 H28" stroke="#7FA6E8" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <g id="upper" class="mv">
+              <path d="M-40 -104 Q-40 -122 -22 -124 H22 Q40 -122 40 -104 V-62 Q40 -56 34 -56 H-34 Q-40 -56 -40 -62 Z" fill="#FFD84D" stroke="#E8B92E" stroke-width="2"/>
+              <path d="M0 -102l4.7 9.5 10.5 1.5-7.6 7.4 1.8 10.4-9.4-4.9-9.4 4.9 1.8-10.4-7.6-7.4 10.5-1.5z" fill="#FF7FA6"/>
+              <g transform="translate(-40,-112)"><g id="armL" class="mv">
+                <rect x="-10" y="-4" width="20" height="46" rx="10" fill="#C98B56"/>
+                <ellipse cx="0" cy="42" rx="11" ry="10" fill="#B37843"/>
+                <circle cx="0" cy="2" r="13" fill="#FFD84D" stroke="#E8B92E" stroke-width="2"/>
+              </g></g>
+              <g transform="translate(40,-112)"><g id="armR" class="mv">
+                <rect x="-10" y="-4" width="20" height="46" rx="10" fill="#C98B56"/>
+                <ellipse cx="0" cy="42" rx="11" ry="10" fill="#B37843"/>
+                <circle cx="0" cy="2" r="13" fill="#FFD84D" stroke="#E8B92E" stroke-width="2"/>
+              </g></g>
+              <g id="head">
+                <circle cx="-32" cy="-194" r="15" fill="#C98B56"/><circle cx="-32" cy="-194" r="8" fill="#F4D9B0"/>
+                <circle cx="32" cy="-194" r="15" fill="#C98B56"/><circle cx="32" cy="-194" r="8" fill="#F4D9B0"/>
+                <circle cx="0" cy="-160" r="44" fill="#C98B56"/>
+                <ellipse cx="0" cy="-145" rx="22" ry="16" fill="#F4D9B0"/>
+                <g id="eyesOpen" fill="#24345E">
+                  <circle cx="-16" cy="-168" r="5.5"/><circle cx="16" cy="-168" r="5.5"/>
+                  <circle cx="-14" cy="-170" r="1.8" fill="#fff"/><circle cx="18" cy="-170" r="1.8" fill="#fff"/>
+                </g>
+                <g id="eyesHappy" style="display:none" stroke="#24345E" stroke-width="3.5" fill="none" stroke-linecap="round">
+                  <path d="M-22 -166 Q-16 -174 -10 -166"/><path d="M10 -166 Q16 -174 22 -166"/>
+                </g>
+                <ellipse cx="-29" cy="-150" rx="7" ry="4.5" fill="#FF9EB5" opacity=".8"/>
+                <ellipse cx="29" cy="-150" rx="7" ry="4.5" fill="#FF9EB5" opacity=".8"/>
+                <ellipse cx="0" cy="-152" rx="7" ry="5" fill="#4A2E1C"/>
+                <path id="mouth" d="M-8 -142 Q0 -134 8 -142" stroke="#4A2E1C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              </g>
+            </g>
+          </g></g>
+        </g>
+
+        <!-- training seat guard with handle, drawn in front of the bear -->
+        <g>
+          <path d="M300 213 C299 150 341 150 340 213" stroke="#7896B0" stroke-width="11" fill="none" stroke-linecap="round"/>
+          <path d="M300 213 C299 150 341 150 340 213" stroke="#E4EEF6" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path d="M297 224 Q297 194 320 192 Q343 194 343 224 Z" fill="#C3D6E6" stroke="#7896B0" stroke-width="2.5"/>
+          <path d="M306 206 Q310 198 318 197" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>
+          <ellipse cx="320" cy="224" rx="26" ry="6" fill="#8AA6BE" stroke="#7896B0" stroke-width="2"/>
+        </g>
+
+        <!-- inside-the-toilet bubble -->
+        <g transform="translate(80,92)"><g id="inset" class="mv" style="opacity:0">
+          <circle r="64" fill="#fff" stroke="#FF7FA6" stroke-width="5"/>
+          <ellipse rx="52" ry="50" fill="#F2F6FB" stroke="#B8C6DA" stroke-width="3"/>
+          <circle id="water" r="36" fill="#BDE6FF"/>
+          <g id="swirl" class="ctr" style="opacity:0" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none">
+            <path d="M0 -30 Q28 -28 26 4"/>
+            <path d="M0 -30 Q28 -28 26 4" transform="rotate(120)"/>
+            <path d="M0 -30 Q28 -28 26 4" transform="rotate(240)"/>
+            <path d="M0 -14 Q13 -13 12 2" transform="rotate(60)"/>
+            <path d="M0 -14 Q13 -13 12 2" transform="rotate(240)"/>
+          </g>
+          <g id="drops"></g>
+          <text y="88" text-anchor="middle" font-size="15" font-weight="900" fill="#E2557F" font-family="inherit">トイレの なか</text>
+        </g></g>
+
+        <g id="fx"></g>
+      </svg>
+    </section>
+
+    <section class="panel guide" aria-live="polite">
+      <p class="stepno" id="stepNo"></p>
+      <h2 id="title"></h2>
+      <p id="tip"></p>
+      <p class="turn" id="turn"></p>
+      <p class="hint" id="hint"></p>
+      <div class="controls">
+        <button class="big" id="okBtn" disabled>⭕ できた！ つぎへ</button>
+        <button class="sub" id="againBtn" disabled>🔁 もういっかい</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="over" id="startOver">
+  <div class="card">
+    <div class="emoji">🐻🚽</div>
+    <h2>くまくんと<br>トイレに いこう！</h2>
+    <p>くまくんの まねっこ してね。</p>
+    <button class="big" id="startBtn">はじめる</button>
+  </div>
+</div>
+
+<div class="over" id="doneOver" hidden>
+  <div class="card" role="dialog" aria-labelledby="doneTitle">
+    <div class="starrow" id="starRow"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+    <h2 id="doneTitle">ぜんぶ できたね！</h2>
+    <p>トイレで おしっこ できる<br>かっこいい おにいさん！</p>
+    <button class="big" id="replayBtn">もういちど さいしょから</button>
+    <p class="tally" id="tally"></p>
+  </div>
+</div>
+
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+(function(){
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  const el = {};
+  ["pants","diaper","basketPants","binDiaper","bearMove","bearJump","standLegs","sitLegs","upper",
+   "armL","armR","lever","inset","water","swirl","drops","fx","eyesOpen","eyesHappy","mouth"].forEach(k => el[k] = $(k));
+
+  const WATER = "#BDE6FF", PEE = "#FFEB8A";
+  const SEAT = "translate(140px,-67px)", BYTOILET = "translate(35px,0px)";
+  const ARM_L = "rotate(12deg)", ARM_R = "rotate(-12deg)";
+  const GRIP_L = "rotate(-28deg)", GRIP_R = "rotate(28deg)"; // とってを にぎる
+
+  /* ---------- sound & voice ---------- */
+  let soundOn = true, actx = null;
+  function ac(){
+    try{
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if(actx.state === "suspended") actx.resume();
+    }catch(e){ actx = null; }
+    return actx;
+  }
+  function tone(freq, dur, opt){
+    const o0 = Object.assign({ type:"sine", gain:.18, to:0, delay:0 }, opt);
+    const c = soundOn && ac(); if(!c) return;
+    try{
+      const t = c.currentTime + o0.delay;
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = o0.type; o.frequency.setValueAtTime(freq, t);
+      if(o0.to) o.frequency.exponentialRampToValueAtTime(o0.to, t + dur);
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(o0.gain, t + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + .05);
+    }catch(e){}
+  }
+  function noise(dur, opt){
+    const o0 = Object.assign({ f1:1200, f2:300, q:1, gain:.25, type:"lowpass", flutter:0 }, opt);
+    const c = soundOn && ac(); if(!c) return;
+    try{
+      const t = c.currentTime;
+      const buf = c.createBuffer(1, Math.ceil(c.sampleRate * dur), c.sampleRate);
+      const d = buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+      const src = c.createBufferSource(); src.buffer = buf;
+      const f = c.createBiquadFilter(); f.type = o0.type; f.Q.value = o0.q;
+      f.frequency.setValueAtTime(o0.f1, t); f.frequency.exponentialRampToValueAtTime(o0.f2, t + dur);
+      const g = c.createGain();
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(o0.gain, t + Math.min(.15, dur/4));
+      g.gain.setValueAtTime(o0.gain, t + dur*.7);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      let out = g;
+      if(o0.flutter){
+        const lfo = c.createOscillator(), lg = c.createGain(), fl = c.createGain();
+        lfo.frequency.value = o0.flutter; lg.gain.value = .5; fl.gain.value = .6;
+        lfo.connect(lg).connect(fl.gain); lfo.start(t); lfo.stop(t + dur);
+        g.connect(fl); out = fl;
+      }
+      src.connect(f).connect(g); out.connect(c.destination);
+      src.start(t); src.stop(t + dur);
+    }catch(e){}
+  }
+  const sfx = {
+    whoosh: () => noise(.5, { f1:2500, f2:400, type:"bandpass", q:1.5, gain:.35 }),
+    pop:    () => tone(420, .18, { to:980, gain:.22 }),
+    boing:  () => { tone(220, .25, { to:660, type:"triangle", gain:.2 }); tone(660, .2, { to:330, type:"triangle", gain:.15, delay:.22 }); },
+    step:   () => tone(180, .08, { to:120, type:"triangle", gain:.18 }),
+    trickle:(s) => noise(s, { f1:3200, f2:2600, type:"bandpass", q:4, gain:.3, flutter:9 }),
+    flush:  () => { noise(2.6, { f1:900, f2:200, gain:.5 }); noise(2.2, { f1:3000, f2:600, type:"bandpass", q:1, gain:.18 }); },
+    click:  () => tone(900, .05, { type:"square", gain:.08 }),
+    yay:    () => [523,659,784,1047].forEach((f,i) => tone(f, .3, { type:"triangle", gain:.18, delay:i*.1 })),
+    fanfare:() => [523,659,784,659,784,1047].forEach((f,i) => tone(f, i===5?.7:.22, { type:"triangle", gain:.2, delay:i*.14 }))
+  };
+
+  function speak(text){
+    if(!soundOn || !("speechSynthesis" in window)) return;
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ja-JP"; u.rate = .95; u.pitch = 1.3;
+      const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith("ja"));
+      if(v) u.voice = v;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  function hush(){ try{ "speechSynthesis" in window && speechSynthesis.cancel(); }catch(e){} }
+
+  $("soundBtn").addEventListener("click", () => {
+    soundOn = !soundOn;
+    $("soundBtn").setAttribute("aria-pressed", soundOn);
+    $("soundBtn").textContent = soundOn ? "🔊 おと あり" : "🔈 おと なし";
+    if(!soundOn) hush();
+  });
+
+  /* ---------- animation helpers ---------- */
+  let runId = 0;
+  function tween(node, frames, opt){
+    const a = node.animate(frames, Object.assign({ duration:600, easing:"ease-in-out", fill:"forwards" }, opt));
+    return a.finished.then(() => { try{ a.commitStyles(); }catch(e){} a.cancel(); }, () => {});
+  }
+  function runner(){
+    const id = ++runId;
+    const chk = () => { if(id !== runId) throw "abort"; };
+    return {
+      chk,
+      tw: async (n, f, o) => { chk(); await tween(n, f, o); chk(); },
+      all: async (...ps) => { chk(); await Promise.all(ps); chk(); },
+      wait: async ms => { chk(); await sleep(ms); chk(); }
+    };
+  }
+  function happy(on){
+    el.eyesOpen.style.display = on ? "none" : "";
+    el.eyesHappy.style.display = on ? "" : "none";
+    el.mouth.setAttribute("d", on ? "M-10 -143 Q0 -128 10 -143 Z" : "M-8 -142 Q0 -134 8 -142");
+    el.mouth.setAttribute("fill", on ? "#8C2E43" : "none");
+  }
+  // ぽんっと でて きえる もじ
+  function pop(text, x, y, opt){
+    const o0 = Object.assign({ size:26, color:"#E2557F", hold:900 }, opt);
+    const t = document.createElementNS(NS, "text");
+    t.setAttribute("x", x); t.setAttribute("y", y);
+    t.setAttribute("text-anchor", "middle"); t.setAttribute("font-size", o0.size);
+    t.setAttribute("font-weight", "900"); t.setAttribute("fill", o0.color);
+    t.setAttribute("stroke", "#fff"); t.setAttribute("stroke-width", "6"); t.setAttribute("paint-order", "stroke");
+    t.setAttribute("font-family", "inherit"); t.setAttribute("class", "ctr");
+    t.textContent = text;
+    el.fx.appendChild(t);
+    const total = 350 + o0.hold + 350;
+    t.animate([
+      { transform:"scale(.2)", opacity:0 },
+      { transform:"scale(1.15)", opacity:1, offset:250/total },
+      { transform:"scale(1)", opacity:1, offset:350/total },
+      { transform:"scale(1) translateY(0px)", opacity:1, offset:(350+o0.hold)/total },
+      { transform:"scale(1) translateY(-14px)", opacity:0 }
+    ], { duration:total, easing:"ease-out", fill:"forwards" }).finished.then(() => t.remove(), () => t.remove());
+  }
+  function sparkle(x, y, n){
+    for(let i=0;i<(n||6);i++){
+      const s = document.createElementNS(NS, "text");
+      s.setAttribute("x", x); s.setAttribute("y", y); s.setAttribute("font-size", 18);
+      s.setAttribute("text-anchor", "middle"); s.setAttribute("fill", ["#FFC21A","#FF7FA6","#4FA3E8"][i%3]);
+      s.textContent = "★"; el.fx.appendChild(s);
+      const a = Math.PI*2*i/(n||6), r = 40 + Math.random()*20;
+      s.animate([
+        { transform:"translate(0px,0px) scale(.3)", opacity:1 },
+        { transform:`translate(${Math.cos(a)*r}px,${Math.sin(a)*r}px) scale(1)`, opacity:0 }
+      ], { duration:800, easing:"ease-out", fill:"forwards" }).finished.then(() => s.remove(), () => s.remove());
+    }
+  }
+  function drop(){
+    const d = document.createElementNS(NS, "circle");
+    const x = (Math.random()-.5)*14, y = (Math.random()-.5)*14;
+    d.setAttribute("cx", x); d.setAttribute("cy", y); d.setAttribute("r", 5);
+    d.setAttribute("fill", "#F7C83A"); d.setAttribute("class", "ctr");
+    el.drops.appendChild(d);
+    d.animate([{ transform:"scale(2.2)", opacity:0 }, { transform:"scale(1)", opacity:1, offset:.6 }, { transform:"scale(.3)", opacity:0 }],
+      { duration:380, easing:"ease-in", fill:"forwards" }).finished.then(() => d.remove(), () => d.remove());
+    const r = document.createElementNS(NS, "circle");
+    r.setAttribute("cx", x); r.setAttribute("cy", y); r.setAttribute("r", 4);
+    r.setAttribute("fill", "none"); r.setAttribute("stroke", "#E8B92E"); r.setAttribute("stroke-width", 2.5);
+    r.setAttribute("vector-effect", "non-scaling-stroke"); r.setAttribute("class", "ctr");
+    el.drops.appendChild(r);
+    r.animate([{ transform:"scale(1)", opacity:0 }, { transform:"scale(1.4)", opacity:1, offset:.2 }, { transform:"scale(7)", opacity:0 }],
+      { duration:900, delay:300, easing:"ease-out", fill:"forwards" }).finished.then(() => r.remove(), () => r.remove());
+  }
+  function bubbles(){
+    for(let i=0;i<10;i++){
+      const b = document.createElementNS(NS, "circle");
+      const a = Math.random()*Math.PI*2, rr = Math.random()*26;
+      b.setAttribute("cx", Math.cos(a)*rr); b.setAttribute("cy", Math.sin(a)*rr);
+      b.setAttribute("r", 3 + Math.random()*4); b.setAttribute("fill", "#fff"); b.setAttribute("class", "ctr");
+      el.drops.appendChild(b);
+      b.animate([{ transform:"scale(0)", opacity:1 }, { transform:"scale(1.3)", opacity:.9, offset:.5 }, { transform:"scale(0)", opacity:0 }],
+        { duration:900, delay:i*150, fill:"forwards" }).finished.then(() => b.remove(), () => b.remove());
+    }
+  }
+  const bob = (n) => el.bearJump.animate(
+    [{ transform:"translateY(0px)" }, { transform:"translateY(-9px)" }, { transform:"translateY(0px)" }],
+    { duration:320, iterations:n });
+
+  /* ---------- scene state at the start of each step ---------- */
+  function setState(i){
+    runId++;
+    document.getAnimations().forEach(a => { try{ a.cancel(); }catch(e){} });
+    el.fx.innerHTML = ""; el.drops.innerHTML = "";
+    const seated = i === 3 || i === 4;
+    const S = (n, st) => Object.assign(n.style, st);
+    S(el.pants, { opacity: i >= 1 ? 0 : 1, transform:"none" });
+    S(el.basketPants, { opacity: i >= 1 ? 1 : 0 });
+    S(el.diaper, { opacity: i >= 2 ? 0 : 1, transform:"none" });
+    S(el.binDiaper, { opacity: i >= 2 ? 1 : 0 });
+    S(el.bearMove, { transform: seated ? SEAT : i >= 5 ? BYTOILET : "none" });
+    S(el.bearJump, { transform:"none" });
+    S(el.standLegs, { opacity: seated ? 0 : 1 });
+    S(el.sitLegs, { opacity: seated ? 1 : 0 });
+    S(el.upper, { transform:"none" });
+    S(el.armL, { transform: seated ? GRIP_L : ARM_L });
+    S(el.armR, { transform: seated ? GRIP_R : ARM_R });
+    S(el.lever, { transform:"none" });
+    S(el.inset, { opacity: i === 4 ? 1 : 0 });
+    S(el.swirl, { opacity:0, transform:"none" });
+    el.water.style.fill = i === 4 ? PEE : WATER;
+    happy(false);
+  }
+
+  /* ---------- the five steps ---------- */
+  const STEPS = [
+    {
+      chip:"ズボン", title:"ズボンを ぬごう",
+      tip:"ズボンの ゴムを もって、ぐーっと したへ。あしを ぬいたら、かごに ないない！",
+      hint:"大人の方へ：ウエストのゴムを一緒に持ってあげると下ろしやすいです。",
+      voice:"ズボンを ぬごう。ぐーっと したへ。", turn:"ズボンを ぬいで みよう！",
+      async play(r){
+        await r.tw(el.upper, [{ transform:"translateY(0px)" }, { transform:"translateY(12px)" }], { duration:350 });
+        pop("ぐーっ", 120, 205);
+        sfx.whoosh();
+        await r.tw(el.pants, [{ transform:"translate(0px,0px) scale(1,1)" }, { transform:"translate(0px,7px) scale(1,.55)" }], { duration:1000, easing:"ease-in" });
+        await r.tw(el.upper, [{ transform:"translateY(12px)" }, { transform:"translateY(0px)" }], { duration:300 });
+        await r.wait(200);
+        pop("ぬぎぬぎ", 180, 70, { color:"#2F7CC0" });
+        sfx.step(); bob(2);
+        await r.wait(700);
+        sfx.whoosh();
+        await r.tw(el.pants, [
+          { transform:"translate(0px,7px) scale(1,.55) rotate(0deg)", opacity:1 },
+          { transform:"translate(-70px,-120px) scale(.75,.75) rotate(-200deg)", opacity:1, offset:.5 },
+          { transform:"translate(-135px,-8px) scale(.5,.5) rotate(-360deg)", opacity:1, offset:.88 },
+          { transform:"translate(-135px,4px) scale(.5,.5) rotate(-360deg)", opacity:0 }
+        ], { duration:1100, easing:"ease-out" });
+        sfx.pop();
+        el.basketPants.style.opacity = 1;
+        await r.tw(el.basketPants, [{ transform:"translateY(-8px)" }, { transform:"translateY(0px)" }], { duration:300, easing:"cubic-bezier(.3,1.8,.5,1)" });
+        pop("ないない！", 45, 235);
+        await r.wait(900);
+      }
+    },
+    {
+      chip:"おむつ", title:"おむつを ぬごう",
+      tip:"おむつも ぐーっと したへ さげて、あしを ぬいたら… ごみばこへ ぽいっ！",
+      hint:"大人の方へ：パンツタイプは脇を破ると脱がせやすいです。",
+      voice:"つぎは おむつ。したへ さげて、ごみばこへ ぽいっ！", turn:"おむつを ぬいで みよう！",
+      async play(r){
+        await r.tw(el.upper, [{ transform:"translateY(0px)" }, { transform:"translateY(12px)" }], { duration:350 });
+        pop("よいしょ", 120, 205);
+        sfx.whoosh();
+        await r.tw(el.diaper, [{ transform:"translate(0px,0px) scale(1,1)" }, { transform:"translate(0px,13px) scale(1,.62)" }], { duration:1000, easing:"ease-in" });
+        await r.tw(el.upper, [{ transform:"translateY(12px)" }, { transform:"translateY(0px)" }], { duration:300 });
+        await r.wait(200);
+        sfx.step(); bob(2);
+        await r.wait(700);
+        pop("ぽいっ！", 180, 70, { size:34 });
+        sfx.whoosh();
+        await r.tw(el.diaper, [
+          { transform:"translate(0px,13px) scale(1,.62) rotate(0deg)", opacity:1 },
+          { transform:"translate(-40px,-130px) scale(.7,.7) rotate(-180deg)", opacity:1, offset:.5 },
+          { transform:"translate(-75px,-12px) scale(.5,.5) rotate(-360deg)", opacity:1, offset:.88 },
+          { transform:"translate(-75px,0px) scale(.5,.5) rotate(-360deg)", opacity:0 }
+        ], { duration:1100, easing:"ease-out" });
+        sfx.pop();
+        el.binDiaper.style.opacity = 1;
+        await r.tw(el.binDiaper, [{ transform:"translateY(-8px)" }, { transform:"translateY(0px)" }], { duration:300, easing:"cubic-bezier(.3,1.8,.5,1)" });
+        sparkle(106, 250, 5);
+        await r.wait(900);
+      }
+    },
+    {
+      chip:"すわる", title:"トイレに すわろう",
+      tip:"よいしょ！ と すわったら、とってを ぎゅっ！ と にぎろうね。",
+      hint:"大人の方へ：取っ手を握ると体が安定して、落ちる怖さが減ります。",
+      voice:"トイレに すわろう。よいしょ！ とってを ぎゅっ！", turn:"すわって とってを にぎって みよう！",
+      async play(r){
+        const walk = bob(4);
+        const steps = [0,320,640,960].map(t => setTimeout(sfx.step, t));
+        await r.tw(el.bearMove, [{ transform:"translate(0px,0px)" }, { transform:"translate(100px,0px)" }], { duration:1280, easing:"linear" });
+        walk.cancel(); steps.forEach(clearTimeout);
+        pop("よいしょ！", 290, 60, { size:30 });
+        sfx.boing();
+        await r.all(
+          tween(el.bearMove, [
+            { transform:"translate(100px,0px)" },
+            { transform:"translate(125px,-115px)", offset:.5 },
+            { transform:SEAT }
+          ], { duration:850 }),
+          tween(el.standLegs, [{ opacity:1 }, { opacity:0 }], { duration:120, delay:380 }),
+          tween(el.sitLegs, [{ opacity:0 }, { opacity:1 }], { duration:120, delay:380 })
+        );
+        await r.tw(el.upper, [{ transform:"translateY(0px)" }, { transform:"translateY(5px)" }, { transform:"translateY(0px)" }], { duration:300 });
+        await r.wait(200);
+        pop("ぎゅっ！", 320, 140, { size:26, color:"#2F7CC0" });
+        await r.all(
+          tween(el.armL, [{ transform:ARM_L }, { transform:GRIP_L }], { duration:450 }),
+          tween(el.armR, [{ transform:ARM_R }, { transform:GRIP_R }], { duration:450 })
+        );
+        happy(true);
+        sfx.pop();
+        sparkle(320, 120, 8);
+        pop("すわれた！", 320, 40, { size:30 });
+        await r.wait(1300);
+        happy(false);
+      }
+    },
+    {
+      chip:"しーしー", title:"おしっこ しよう",
+      tip:"からだの ちからを ぬいて… しー しー しー。",
+      hint:"大人の方へ：おちんちんを下に向けて座ると飛び散りにくいです。出なくても、座れたら大成功！",
+      voice:"おしっこ しよう。しー、しー、しー。", turn:"しー しー してみよう！",
+      async play(r){
+        await r.tw(el.inset, [{ opacity:0, transform:"scale(.6)" }, { opacity:1, transform:"scale(1)" }], { duration:450, easing:"cubic-bezier(.3,1.6,.5,1)" });
+        happy(true);
+        await r.wait(400);
+        sfx.trickle(3.6);
+        const iv = setInterval(drop, 170);
+        const water = tween(el.water, [{ fill:WATER }, { fill:PEE }], { duration:3400, easing:"linear" });
+        try{
+          for(let k=0;k<3;k++){
+            pop("しー", k%2 ? 370 : 270, 175, { size:28, color:"#E8962A", hold:500 });
+            await r.wait(1150);
+          }
+        } finally { clearInterval(iv); }
+        await r.all(water);
+        await r.wait(400);
+        sfx.yay();
+        pop("でたー！", 320, 40, { size:34 });
+        sparkle(80, 92, 8);
+        await r.wait(1400);
+        happy(false);
+      }
+    },
+    {
+      chip:"ながす", title:"ながそう",
+      tip:"レバーを ぐいっ！ ジャー！ おしっこ ばいばーい！",
+      hint:"大人の方へ：音が怖い子は、最初は大人が流して見せてあげましょう。",
+      voice:"さいごは ながそう。レバーを ぐいっ！", turn:"レバーで ながして みよう！",
+      async play(r){
+        await r.all(
+          tween(el.armL, [{ transform:GRIP_L }, { transform:ARM_L }], { duration:350 }),
+          tween(el.armR, [{ transform:GRIP_R }, { transform:ARM_R }], { duration:350 })
+        );
+        sfx.boing();
+        pop("ぴょん", 260, 60);
+        await r.all(
+          tween(el.bearMove, [
+            { transform:SEAT },
+            { transform:"translate(90px,-115px)", offset:.5 },
+            { transform:BYTOILET }
+          ], { duration:850 }),
+          tween(el.standLegs, [{ opacity:0 }, { opacity:1 }], { duration:120, delay:380 }),
+          tween(el.sitLegs, [{ opacity:1 }, { opacity:0 }], { duration:120, delay:380 })
+        );
+        await r.wait(250);
+        await r.tw(el.armR, [{ transform:ARM_R }, { transform:"rotate(-158deg)" }], { duration:550 });
+        sfx.click();
+        await r.tw(el.lever, [{ transform:"rotate(0deg)" }, { transform:"rotate(-28deg)" }], { duration:220 });
+        sfx.flush();
+        pop("ジャー！", 320, 92, { size:40, color:"#2F7CC0", hold:1500 });
+        bubbles();
+        await r.all(
+          tween(el.swirl, [{ opacity:0, transform:"rotate(0deg)" }, { opacity:1, transform:"rotate(300deg)", offset:.2 }, { opacity:1, transform:"rotate(1100deg)", offset:.85 }, { opacity:0, transform:"rotate(1300deg)" }], { duration:2600, easing:"linear" }),
+          tween(el.water, [{ fill:PEE }, { fill:WATER }], { duration:2000, delay:300 }),
+          tween(el.lever, [{ transform:"rotate(-28deg)" }, { transform:"rotate(0deg)" }], { duration:300, delay:500 }),
+          tween(el.armR, [{ transform:"rotate(-158deg)" }, { transform:"rotate(-130deg)" }], { duration:400, delay:600 })
+        );
+        happy(true);
+        pop("おしっこ ばいばーい！", 215, 40, { size:26, hold:1600 });
+        await r.tw(el.armR, [
+          { transform:"rotate(-130deg)" }, { transform:"rotate(-160deg)" }, { transform:"rotate(-130deg)" },
+          { transform:"rotate(-160deg)" }, { transform:"rotate(-130deg)" }
+        ], { duration:1400 });
+        await r.all(
+          tween(el.armR, [{ transform:"rotate(-130deg)" }, { transform:ARM_R }], { duration:400 }),
+          tween(el.inset, [{ opacity:1 }, { opacity:0 }], { duration:500 })
+        );
+        happy(false);
+      }
+    }
+  ];
+
+  /* ---------- progress ---------- */
+  const stepsUl = $("steps");
+  STEPS.forEach((s, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="n"><span>${i+1}</span></span>${s.chip}`;
+    stepsUl.appendChild(li);
+  });
+  const chips = [...stepsUl.children];
+  function paintChips(cur){
+    chips.forEach((c, i) => {
+      c.classList.toggle("fin", i < cur);
+      c.classList.toggle("now", i === cur);
+    });
+  }
+
+  /* ---------- flow ---------- */
+  let cur = 0;
+  const okBtn = $("okBtn"), againBtn = $("againBtn"), turn = $("turn");
+  function buttons(on){
+    okBtn.disabled = againBtn.disabled = !on;
+    okBtn.classList.toggle("ready", on);
+  }
+
+  async function show(i){
+    cur = i;
+    const s = STEPS[i];
+    setState(i);
+    paintChips(i);
+    $("stepNo").textContent = `${i+1} / ${STEPS.length}`;
+    $("title").textContent = s.title;
+    $("tip").textContent = s.tip;
+    $("hint").textContent = s.hint;
+    okBtn.textContent = i === STEPS.length-1 ? "⭕ できた！" : "⭕ できた！ つぎへ";
+    turn.textContent = "くまくんを みててね 👀";
+    turn.className = "turn wait";
+    buttons(false);
+    speak(s.voice);
+    const r = runner();
+    try{
+      await r.wait(700);
+      await s.play(r);
+    }catch(e){ if(e === "abort") return; throw e; }
+    turn.textContent = "こんどは きみの ばん！ " + s.turn;
+    turn.className = "turn go";
+    speak("こんどは きみの ばん！ " + s.turn);
+    buttons(true);
+  }
+
+  const PRAISE = ["すごい！", "じょうず！", "やったね！", "かっこいい！"];
+  okBtn.addEventListener("click", async () => {
+    if(okBtn.disabled) return;
+    buttons(false);
+    if(cur < STEPS.length-1){ show(cur+1); return; }
+    const word = PRAISE[Math.floor(Math.random()*PRAISE.length)];
+    turn.textContent = word + " ⭐";
+    turn.className = "turn";
+    sfx.yay(); speak(word);
+    chips[cur].classList.add("fin"); chips[cur].classList.remove("now");
+    chips[cur].classList.remove("got"); void chips[cur].offsetWidth; chips[cur].classList.add("got");
+    confetti(40);
+    happy(true);
+    pop(word, 215, 40, { size:36 });
+    bob(2);
+    const myRun = runId;
+    await sleep(1600);
+    if(myRun !== runId) return;
+    finish();
+  });
+  againBtn.addEventListener("click", () => {
+    if(againBtn.disabled) return;
+    show(cur);
+  });
+
+  function confetti(n){
+    const box = $("confetti");
+    const colors = ["#FF7FA6","#FFD84D","#4FA3E8","#7BD389","#FFB84D"];
+    for(let i=0;i<n;i++){
+      const c = document.createElement("i");
+      c.style.left = Math.random()*100 + "vw";
+      c.style.background = colors[i % colors.length];
+      c.style.animationDuration = (1.6 + Math.random()*1.4) + "s";
+      c.style.animationDelay = (Math.random()*.4) + "s";
+      box.appendChild(c);
+      setTimeout(() => c.remove(), 3500);
+    }
+  }
+
+  function readTally(){ try{ return parseInt(localStorage.getItem("toire-tally") || "0", 10) || 0; }catch(e){ return 0; } }
+  function finish(){
+    paintChips(STEPS.length);
+    let n = readTally() + 1;
+    try{ localStorage.setItem("toire-tally", String(n)); }catch(e){}
+    $("tally").textContent = `トイレ できた かず：${n}かい`;
+    const stars = [...$("starRow").children];
+    stars.forEach(s => s.classList.remove("on"));
+    $("doneOver").hidden = false;
+    stars.forEach((s, i) => setTimeout(() => { s.classList.add("on"); tone(660 + i*110, .15, { type:"triangle", gain:.15 }); }, 300 + i*220));
+    setTimeout(() => sfx.fanfare(), 1500);
+    confetti(80);
+    speak("ぜんぶ できたね！ トイレで おしっこ できる、かっこいい おにいさん！");
+  }
+
+  $("startBtn").addEventListener("click", () => {
+    ac();
+    $("startOver").hidden = true;
+    show(0);
+  });
+  $("replayBtn").addEventListener("click", () => {
+    $("doneOver").hidden = true;
+    show(0);
+  });
+  $("restartBtn").addEventListener("click", () => {
+    hush();
+    $("doneOver").hidden = true;
+    $("startOver").hidden = true;
+    show(0);
+  });
+
+  // 最初の表示
+  setState(0);
+  paintChips(0);
+  $("stepNo").textContent = `1 / ${STEPS.length}`;
+  $("title").textContent = STEPS[0].title;
+  $("tip").textContent = STEPS[0].tip;
+  $("hint").textContent = STEPS[0].hint;
+})();
+</script>
+</body>
+</html>
