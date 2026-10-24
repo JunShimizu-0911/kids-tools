@@ -756,9 +756,9 @@ button:focus-visible{ outline:4px solid var(--lemon); outline-offset:3px; }
       await r.wait(700);
       await s.play(r);
     }catch(e){ if(e === "abort") return; throw e; }
-    turn.textContent = "こんどは きみの ばん！ " + s.turn;
+    turn.textContent = "こんどは はるくんの ばん！ " + s.turn;
     turn.className = "turn go";
-    speak("こんどは きみの ばん！ " + s.turn);
+    speak("こんどは はるくんの ばん！ " + s.turn);
     buttons(true);
   }
 
