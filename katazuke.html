@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ひなこの おかたづけ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFE9F1; --tile:#FFD3E3; --card:#FFFFFF; --ink:#4A2B3F; --soft:#8A6A80;
+  --pink:#FF7FA6; --pink-deep:#E2557F; --lemon:#FFD84D; --lemon-ink:#6B5200;
+  --blue:#4FA3E8; --blue-deep:#2F7CC0; --track:#FFF0F6; --hint:#FFF6D6; --hint-ink:#6B5200;
+  color-scheme: light;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#2E1B28; --tile:#45293B; --card:#3A2333; --ink:#FFF0F6; --soft:#D9B8CB;
+    --track:#4A2D40; --hint:#3A3A26; --hint-ink:#FFE9A3; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#2E1B28; --tile:#45293B; --card:#3A2333; --ink:#FFF0F6; --soft:#D9B8CB;
+  --track:#4A2D40; --hint:#3A3A26; --hint-ink:#FFE9A3; color-scheme:dark;
+}
+html{ height:100%; }
+*,*::before,*::after{ box-sizing:border-box; }
+body{
+  margin:0; min-height:100%;
+  background-color:var(--bg);
+  background-image:radial-gradient(var(--tile) 3px, transparent 3.5px);
+  background-size:36px 36px;
+  color:var(--ink);
+  font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  font-weight:700;
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{ max-width:1040px; margin:0 auto; padding:12px 16px 24px; }
+.top{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+h1{ font-size:20px; font-weight:900; margin:0; letter-spacing:.04em; }
+.tools{ display:flex; gap:8px; }
+.ghost{
+  font:inherit; font-size:14px; color:var(--ink); background:var(--card);
+  border:2px solid var(--tile); border-radius:999px; padding:6px 14px; cursor:pointer;
+}
+
+/* step jump buttons */
+.steps{ display:flex; gap:6px; list-style:none; padding:0; margin:0 0 10px; justify-content:center; flex-wrap:wrap; }
+.steps button{
+  font:inherit; font-size:14px; display:flex; align-items:center; gap:4px; cursor:pointer;
+  padding:6px 12px; border-radius:999px; background:var(--card); color:var(--soft);
+  border:2px solid var(--tile);
+}
+.steps .n{ display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--track); font-size:13px; }
+.steps button.now{ background:var(--lemon); color:var(--lemon-ink); border-color:var(--lemon); transform:scale(1.08); }
+.steps button.now .n{ background:#fff; }
+.steps button.fin{ color:var(--ink); }
+.steps button.fin .n{ background:var(--pink); color:#fff; }
+.steps button.fin .n::before{ content:"★"; }
+.steps button.fin .n span{ display:none; }
+
+.stage{ display:grid; gap:12px; grid-template-columns:1fr; }
+@media (min-width:820px){ .stage{ grid-template-columns:1.6fr 1fr; align-items:start; } }
+.panel{ background:var(--card); border-radius:28px; padding:10px; position:relative; box-shadow:0 5px 0 var(--tile); }
+.scenebox{ overflow:hidden; padding:0; }
+.scenebox svg{ width:100%; height:auto; display:block; }
+.guide{ padding:16px 18px 18px; display:flex; flex-direction:column; }
+.stepno{ margin:0; font-size:15px; color:var(--soft); }
+#title{ margin:2px 0 6px; font-size:clamp(26px, 6.5vw, 36px); font-weight:900; line-height:1.25; }
+#tip{ margin:4px 0 10px; font-size:18px; line-height:1.7; }
+.turn{ margin:0 0 10px; font-size:19px; font-weight:900; color:var(--pink-deep); min-height:1.5em; }
+.turn.wait{ color:var(--soft); }
+.turn.go{ animation:bob 1s ease-in-out infinite; }
+@keyframes bob{ 50%{ transform:translateY(-4px); } }
+.timebar{ margin:0 0 14px; }
+.tb-row{ display:flex; justify-content:space-between; align-items:baseline; font-size:15px; color:var(--soft); margin-bottom:6px; }
+.tb-row b{ font-size:22px; color:var(--ink); font-variant-numeric:tabular-nums; }
+#barLabel.ask{ color:var(--pink-deep); font-size:18px; font-weight:900; }
+.bar{ height:20px; background:var(--track); border:2px solid var(--tile); border-radius:999px; overflow:hidden; }
+.bar span{ display:block; height:100%; width:0; background:linear-gradient(90deg,#FFB3CC,var(--pink)); border-radius:999px; transition:width .5s linear; }
+.big{
+  font:inherit; font-weight:900; font-size:24px; color:#fff; background:var(--pink);
+  border:none; border-radius:999px; padding:14px 22px; cursor:pointer; min-height:64px; width:100%;
+  box-shadow:0 6px 0 var(--pink-deep); transition:transform .1s, box-shadow .1s, opacity .2s;
+}
+.big:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--pink-deep); }
+.big:disabled{ opacity:.35; cursor:default; transform:none; }
+.big.ready{ animation:pulse 1.2s ease-in-out infinite; }
+@keyframes pulse{ 50%{ transform:scale(1.04); } }
+.sub{
+  font:inherit; font-weight:900; font-size:20px; color:#fff; background:var(--blue);
+  border:none; border-radius:999px; padding:12px 22px; cursor:pointer; min-height:56px; width:100%;
+  box-shadow:0 6px 0 var(--blue-deep);
+}
+button:focus-visible{ outline:4px solid var(--lemon); outline-offset:3px; }
+
+#scene .mv{ transform-box:view-box; transform-origin:0 0; }
+#scene .ctr{ transform-box:fill-box; transform-origin:center; }
+
+/* overlays */
+.over{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:rgba(60,20,45,.5); padding:20px; z-index:10;
+}
+.over[hidden]{ display:none; }
+.card{
+  background:var(--card); border-radius:32px; padding:28px 24px; text-align:center; max-width:400px; width:100%;
+  box-shadow:0 8px 0 var(--tile); display:flex; flex-direction:column; gap:12px;
+}
+.card h2{ font-size:32px; margin:4px 0 0; font-weight:900; color:var(--pink-deep); line-height:1.3; }
+.card p{ font-size:18px; margin:0 0 6px; line-height:1.6; }
+.emoji{ font-size:60px; line-height:1.1; }
+.starrow{ font-size:36px; letter-spacing:2px; }
+.starrow span{ display:inline-block; opacity:0; color:#FFC21A; }
+.starrow span.on{ animation:starin .5s cubic-bezier(.3,1.8,.5,1) forwards; }
+@keyframes starin{ from{ opacity:0; transform:scale(.2) rotate(-90deg); } to{ opacity:1; transform:none; } }
+.confetti{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:20; }
+.confetti i{ position:absolute; top:-20px; width:12px; height:16px; border-radius:3px; animation:fall linear forwards; }
+@keyframes fall{ to{ transform:translateY(110vh) rotate(720deg); } }
+
+@media (prefers-reduced-motion: reduce){
+  .turn.go, .big.ready{ animation:none; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <h1>🧸 ひなこの おかたづけ</h1>
+    <div class="tools">
+      <button class="ghost" id="soundBtn" aria-pressed="true">🔊 おと あり</button>
+    </div>
+  </header>
+
+  <nav><ol class="steps" id="steps" aria-label="だんかいに ジャンプ"></ol></nav>
+
+  <div class="stage">
+    <section class="panel scenebox" aria-label="おへや">
+      <svg id="scene" viewBox="-130 0 930 600" role="img" aria-label="ひなこちゃんが おへやを かたづける ようす">
+        <defs>
+          <pattern id="wall" width="12" height="12" patternUnits="userSpaceOnUse">
+            <rect width="12" height="12" fill="#D6D1CC"/>
+            <circle cx="3" cy="3" r="1" fill="#C9C3BD"/><circle cx="9" cy="9" r="1" fill="#CEC8C2"/>
+          </pattern>
+          <pattern id="plaid" width="8" height="8" patternUnits="userSpaceOnUse">
+            <rect width="8" height="8" fill="#C8313F"/>
+            <path d="M0 2H8M2 0V8" stroke="#7A1E2A" stroke-width="1.5"/>
+            <path d="M0 6H8M6 0V8" stroke="#F2A0A8" stroke-width=".8"/>
+          </pattern>
+          <pattern id="strap" width="10" height="6" patternUnits="userSpaceOnUse">
+            <rect width="10" height="6" fill="#8EC5F2"/>
+            <circle cx="3" cy="3" r="1.4" fill="#FF8FB8"/><circle cx="8" cy="3" r="1.2" fill="#FFE066"/>
+          </pattern>
+          <pattern id="houndstooth" width="8" height="8" patternUnits="userSpaceOnUse">
+            <rect width="8" height="8" fill="#fff"/>
+            <path d="M0 0H4V4H0Z M4 4H8V8H4Z" fill="#222"/>
+          </pattern>
+        </defs>
+
+        <!-- wall & floor -->
+        <rect x="-130" width="930" height="470" fill="url(#wall)"/>
+        <rect x="-130" y="0" width="930" height="26" fill="#F7F7F5"/>
+        <rect x="-130" y="26" width="930" height="6" fill="#E3E1DD"/>
+        <rect x="-130" y="462" width="930" height="138" fill="#E9E2D6"/>
+        <path d="M-100 470 H770 Q790 470 792 490 L800 600 H-130 L-120 490 Q-118 470 -100 470 Z" fill="#F6F1E8"/>
+        <g id="matPattern" fill="#DEDAD5"></g>
+
+        <!-- left cubby shelf: prints (top) and bags (middle) -->
+        <g>
+          <path d="M-124 470 V166 Q-124 150 -108 150 H-30 Q-14 150 -14 166 V470 Z" fill="#F3E2C2" stroke="#D9BF94" stroke-width="3"/>
+          <rect x="-114" y="160" width="90" height="302" fill="#E6CFA6"/>
+          <rect x="-118" y="250" width="98" height="9" fill="#F3E2C2" stroke="#D9BF94" stroke-width="2"/>
+          <rect x="-118" y="350" width="98" height="9" fill="#F3E2C2" stroke="#D9BF94" stroke-width="2"/>
+          <g fill="#F5F8FB" stroke="#C9D3E3" stroke-width="2" opacity=".95">
+            <rect x="-110" y="366" width="82" height="44" rx="4"/><rect x="-110" y="414" width="82" height="44" rx="4"/>
+          </g>
+          <rect x="-80" y="384" width="22" height="6" rx="3" fill="#C9D3E3"/><rect x="-80" y="432" width="22" height="6" rx="3" fill="#C9D3E3"/>
+          <rect x="-104" y="196" width="70" height="54" rx="4" fill="#7FB5E8"/>
+        </g>
+        <g id="dst-print"></g>
+        <g>
+          <rect x="-108" y="222" width="78" height="28" rx="4" fill="#9DC8F0" stroke="#5E97D0" stroke-width="2.5"/>
+          <text x="-69" y="241" text-anchor="middle" font-size="12" font-weight="900" fill="#fff" font-family="inherit">ぷりんと</text>
+        </g>
+        <g id="dst-lshelf"></g>
+
+        <!-- shelf frame -->
+        <g>
+          <rect x="64" y="40" width="30" height="430" fill="#EBC896"/>
+          <rect x="88" y="40" width="6" height="430" fill="#D2A66A"/>
+          <rect x="706" y="40" width="30" height="430" fill="#EBC896"/>
+          <rect x="730" y="40" width="6" height="430" fill="#D2A66A"/>
+          <rect x="56" y="40" width="46" height="18" rx="3" fill="#E0A86A"/>
+          <rect x="698" y="40" width="46" height="18" rx="3" fill="#E0A86A"/>
+        </g>
+
+        <!-- top shelf items -->
+        <g>
+          <g transform="translate(112,200)">
+            <ellipse cx="0" cy="-22" rx="14" ry="20" fill="#F29A3A"/>
+            <circle cx="0" cy="-50" r="14" fill="#F29A3A"/>
+            <circle cx="-10" cy="-61" r="5" fill="#F29A3A"/><circle cx="10" cy="-61" r="5" fill="#F29A3A"/>
+            <ellipse cx="0" cy="-46" rx="7" ry="5" fill="#fff"/>
+            <circle cx="-5" cy="-53" r="1.8" fill="#222"/><circle cx="5" cy="-53" r="1.8" fill="#222"/>
+            <path d="M-12 -28h8M-12 -18h8M4 -28h8M4 -18h8" stroke="#3A2A1A" stroke-width="2.5" stroke-linecap="round"/>
+            <ellipse cx="-6" cy="-3" rx="6" ry="4" fill="#fff"/><ellipse cx="6" cy="-3" rx="6" ry="4" fill="#fff"/>
+          </g>
+          <g transform="translate(162,200)">
+            <path d="M-8 -50 L-14 -86" stroke="#4F8CE8" stroke-width="4" stroke-linecap="round"/>
+            <path d="M0 -50 L2 -96" stroke="#FF6FA0" stroke-width="4" stroke-linecap="round"/>
+            <path d="M8 -50 L16 -84" stroke="#58C27D" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="-12" cy="-82" r="9" fill="#FF9EC4"/><circle cx="14" cy="-80" r="8" fill="#FFE066"/>
+            <path d="M-20 -54 H20 L16 0 H-16 Z" fill="#B9BEC4" stroke="#9AA0A8" stroke-width="2"/>
+            <path d="M-18 -40 H18 M-17 -24 H17" stroke="#A5ABB2" stroke-width="2"/>
+          </g>
+          <g transform="translate(212,200)">
+            <rect x="-20" y="-54" width="40" height="54" rx="3" fill="#FFCF2E" stroke="#E0A800" stroke-width="2"/>
+            <path d="M0 -40l4.7 9.5 10.5 1.5-7.6 7.4 1.8 10.4-9.4-4.9-9.4 4.9 1.8-10.4-7.6-7.4 10.5-1.5z" fill="#fff"/>
+          </g>
+          <g transform="translate(290,200)">
+            <rect x="-36" y="-34" width="72" height="34" rx="8" fill="#FF6FA0" stroke="#E2457F" stroke-width="2"/>
+            <path d="M-30 -34 Q-32 -100 0 -102 Q32 -100 30 -34 Z" fill="#FF8FB8" stroke="#E2457F" stroke-width="2"/>
+            <path d="M-20 -38 Q-22 -88 0 -90 Q22 -88 20 -38 Z" fill="#E4EEF6"/>
+            <path d="M-12 -80 L-4 -50" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+            <path d="M-10 -104 q10 -10 10 2 q0 -12 10 -2 q-10 8 -10 2 q0 6 -10 -2z" fill="#E2457F"/>
+            <path d="M-14 -16 h28" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          </g>
+          <g transform="translate(360,200)">
+            <rect x="-20" y="-10" width="40" height="10" rx="3" fill="#C9A15E"/>
+            <path d="M-17 -10 V-52 Q-17 -72 0 -72 Q17 -72 17 -52 V-10 Z" fill="#DDEFFF" opacity=".55" stroke="#B9D4EA" stroke-width="2"/>
+            <path d="M0 -12 V-44" stroke="#3E8E4E" stroke-width="2.5"/>
+            <path d="M0 -30 q-10 -2 -10 -8 q8 0 10 6" fill="#58C27D"/>
+            <circle cx="0" cy="-48" r="7" fill="#E83A58"/>
+          </g>
+          <g id="books"></g>
+        </g>
+        <rect x="60" y="200" width="680" height="16" fill="#EFCF9E"/>
+        <rect x="60" y="214" width="680" height="4" fill="#C99A5E"/>
+
+        <!-- lower shelf: toy houses -->
+        <g>
+          <rect x="118" y="262" width="120" height="98" rx="6" fill="#C6A8EA"/>
+          <rect x="118" y="300" width="56" height="60" rx="6" fill="#86DCCB"/>
+          <path d="M112 266 Q178 226 244 266 Z" fill="#FF8FB8"/>
+          <circle cx="150" cy="292" r="16" fill="#FF6FA0"/><circle cx="150" cy="292" r="10" fill="#9ED8F5"/>
+          <rect x="190" y="282" width="38" height="22" rx="4" fill="#F5D7F2"/>
+          <rect x="190" y="314" width="38" height="22" rx="4" fill="#F5D7F2"/>
+          <circle cx="134" cy="330" r="6" fill="#B07CE0"/><circle cx="156" cy="330" r="6" fill="#B07CE0"/>
+          <g id="dollhouses"></g>
+        </g>
+        <rect x="60" y="360" width="680" height="14" fill="#5A3A28"/>
+        <rect x="60" y="372" width="680" height="4" fill="#3E271B"/>
+        <path d="M126 270 L76 470" stroke="#F5E08A" stroke-width="14" stroke-linecap="round"/>
+        <path d="M126 270 L76 470" stroke="#FFF0A8" stroke-width="7" stroke-linecap="round"/>
+
+        <!-- under the shelf -->
+        <g>
+          <rect x="652" y="372" width="16" height="98" fill="#E83A58"/>
+          <rect x="670" y="368" width="14" height="102" fill="#FFE066"/>
+          <rect x="686" y="376" width="14" height="94" fill="#fff" stroke="#ddd"/>
+        </g>
+        <g id="dst-under"></g>
+
+        <!-- toy box (back) -->
+        <path d="M-106 482 H98 L92 494 H-100 Z" fill="#D9805E"/>
+        <g id="dst-toy"></g>
+        <g>
+          <path d="M-108 490 H100 L92 558 H-100 Z" fill="#FFAA7A" stroke="#D9805E" stroke-width="3" stroke-linejoin="round"/>
+          <text x="-4" y="532" text-anchor="middle" font-size="16" font-weight="900" fill="#fff" font-family="inherit">おもちゃばこ</text>
+        </g>
+
+        <!-- mess on the floor -->
+        <g id="mess"></g>
+
+        <!-- hinako -->
+        <g id="hinakoPos" class="mv" style="transform:translate(400px,592px) scale(1.05)"><g id="hinakoBob" class="mv"><g id="hinako">
+          <ellipse cx="62" cy="-150" rx="15" ry="32" fill="#2B2320" transform="rotate(-12 62 -150)"/>
+          <path d="M-66 -196 Q-70 -142 -48 -128 H48 Q70 -142 66 -196 Z" fill="#2B2320"/>
+          <circle cx="0" cy="-200" r="68" fill="#2B2320"/>
+          <g transform="translate(58,-226) rotate(20)">
+            <path d="M0 0 Q-16 -18 -22 -4 Q-18 8 0 0Z" fill="#fff" stroke="#C9C3BD" stroke-width="1.5"/>
+            <path d="M0 0 Q16 -18 22 -4 Q18 8 0 0Z" fill="#fff" stroke="#C9C3BD" stroke-width="1.5"/>
+            <path d="M0 0 L-8 22 M0 0 L8 24" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+            <circle r="4" fill="#F3F3F3"/>
+          </g>
+          <rect x="-21" y="-34" width="14" height="28" rx="6" fill="#FFE1CF"/>
+          <rect x="7" y="-34" width="14" height="28" rx="6" fill="#FFE1CF"/>
+          <g fill="#fff" stroke="#E0E0E0" stroke-width="1">
+            <circle cx="-20" cy="-14" r="4"/><circle cx="-14" cy="-15" r="4"/><circle cx="-8" cy="-14" r="4"/>
+            <circle cx="8" cy="-14" r="4"/><circle cx="14" cy="-15" r="4"/><circle cx="20" cy="-14" r="4"/>
+          </g>
+          <ellipse cx="-15" cy="-5" rx="15" ry="8" fill="#DCC8EA" stroke="#B9A2CC" stroke-width="2"/>
+          <ellipse cx="15" cy="-5" rx="15" ry="8" fill="#DCC8EA" stroke="#B9A2CC" stroke-width="2"/>
+          <path d="M-34 -96 H34 Q46 -64 54 -32 Q0 -24 -54 -32 Q-46 -64 -34 -96 Z" fill="#fff" stroke="#E2DED8" stroke-width="2"/>
+          <path d="M-44 -62 Q0 -56 44 -62" stroke="#E2DED8" stroke-width="2" fill="none"/>
+          <g id="lace" fill="#fff" stroke="#E2DED8" stroke-width="1.2"></g>
+          <!-- arms down -->
+          <rect x="-58" y="-112" width="14" height="40" rx="7" fill="#FFE1CF" transform="rotate(10 -51 -112)"/>
+          <circle cx="-58" cy="-72" r="8" fill="#FFE1CF"/>
+          <g id="armRDown">
+            <rect x="44" y="-112" width="14" height="40" rx="7" fill="#FFE1CF" transform="rotate(-10 51 -112)"/>
+            <circle cx="58" cy="-72" r="8" fill="#FFE1CF"/>
+          </g>
+          <!-- shirt -->
+          <path d="M-36 -138 Q-46 -136 -52 -120 L-60 -102 L-44 -94 L-38 -106 L-36 -90 H36 L38 -106 L44 -94 L60 -102 L52 -120 Q46 -136 36 -138 Z" fill="#F9BDD6" stroke="#EE9DC0" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M-30 -139 L-38 -118 L0 -112 L38 -118 L30 -139 L0 -122 Z" fill="#fff"/>
+          <path d="M-34 -124 L0 -117 L34 -124" stroke="#F48FB8" stroke-width="2" fill="none"/>
+          <g transform="translate(-16,-112)">
+            <circle r="3" fill="#FFD84D"/>
+            <g fill="#fff"><circle cx="0" cy="-5" r="2.6"/><circle cx="5" cy="0" r="2.6"/><circle cx="0" cy="5" r="2.6"/><circle cx="-5" cy="0" r="2.6"/></g>
+          </g>
+          <path d="M-30 -136 L34 -84" stroke="url(#strap)" stroke-width="7" stroke-linecap="round"/>
+          <g transform="translate(36,-74)">
+            <rect x="-16" y="-14" width="32" height="28" rx="7" fill="#FF9EC4" stroke="#E2457F" stroke-width="2"/>
+            <path d="M-16 0 H16 V7 Q16 14 9 14 H-9 Q-16 14 -16 7 Z" fill="url(#plaid)"/>
+            <rect x="12" y="-18" width="12" height="16" rx="3" fill="#8ED3F0" stroke="#4FA3E8" stroke-width="1.5"/>
+          </g>
+          <!-- head -->
+          <rect x="-8" y="-146" width="16" height="12" fill="#FFD6C0"/>
+          <circle cx="-56" cy="-188" r="9" fill="#FFE1CF"/>
+          <circle cx="56" cy="-188" r="9" fill="#FFE1CF"/>
+          <ellipse cx="0" cy="-192" rx="56" ry="52" fill="#FFE8DA"/>
+          <path d="M-62 -196 Q-64 -264 0 -266 Q64 -264 62 -196 Q52 -220 40 -212 Q32 -232 16 -218 Q6 -236 -8 -220 Q-22 -236 -34 -214 Q-48 -224 -62 -196 Z" fill="#2B2320"/>
+          <path d="M-62 -204 Q-68 -160 -56 -138 Q-50 -166 -52 -200 Z" fill="#2B2320"/>
+          <path d="M62 -204 Q68 -160 56 -138 Q50 -166 52 -200 Z" fill="#2B2320"/>
+          <path d="M-30 -252 Q-10 -262 14 -256" stroke="#5A4A44" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>
+          <path d="M-30 -207 Q-22 -211 -14 -208" stroke="#6A5048" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M14 -208 Q22 -211 30 -207" stroke="#6A5048" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <g id="eyesOpen">
+            <ellipse cx="-22" cy="-184" rx="10" ry="12" fill="#3A2A2A"/>
+            <ellipse cx="22" cy="-184" rx="10" ry="12" fill="#3A2A2A"/>
+            <path d="M-31 -178 Q-22 -170 -13 -178" fill="#6B4A50" opacity=".6"/>
+            <path d="M13 -178 Q22 -170 31 -178" fill="#6B4A50" opacity=".6"/>
+            <circle cx="-19" cy="-188" r="3.6" fill="#fff"/><circle cx="25" cy="-188" r="3.6" fill="#fff"/>
+            <circle cx="-25" cy="-180" r="1.6" fill="#fff"/><circle cx="19" cy="-180" r="1.6" fill="#fff"/>
+          </g>
+          <g id="eyesHappy" style="display:none" stroke="#3A2A2A" stroke-width="4" fill="none" stroke-linecap="round">
+            <path d="M-32 -182 Q-22 -194 -12 -182"/><path d="M12 -182 Q22 -194 32 -182"/>
+          </g>
+          <ellipse cx="-36" cy="-166" rx="10" ry="5.5" fill="#FFB0C0" opacity=".85"/>
+          <ellipse cx="36" cy="-166" rx="10" ry="5.5" fill="#FFB0C0" opacity=".85"/>
+          <path d="M-9 -162 Q0 -150 9 -162 Z" fill="#E86A82" stroke="#C94C66" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- peace-sign arm (celebrations) -->
+          <g id="armPeace" style="display:none" transform="translate(46,-112) rotate(-168)">
+            <rect x="-7" y="0" width="14" height="50" rx="7" fill="#FFE1CF"/>
+            <rect x="-7" y="54" width="6.5" height="24" rx="3.2" fill="#FFE1CF" stroke="#E8B8A0" stroke-width="1.2" transform="rotate(-20 -3.5 56)"/>
+            <rect x="0.5" y="54" width="6.5" height="24" rx="3.2" fill="#FFE1CF" stroke="#E8B8A0" stroke-width="1.2" transform="rotate(20 3.5 56)"/>
+            <circle cx="0" cy="52" r="9.5" fill="#FFE1CF" stroke="#E8B8A0" stroke-width="1.2"/>
+          </g>
+        </g></g></g>
+
+        <!-- magnifier for the final check -->
+        <g id="lens" class="mv" style="opacity:0">
+          <circle r="34" fill="#DDF1FF" fill-opacity=".45" stroke="#4F8CE8" stroke-width="7"/>
+          <path d="M-14 -18 Q-6 -24 4 -22" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M24 24 L50 50" stroke="#E2557F" stroke-width="12" stroke-linecap="round"/>
+        </g>
+
+        <g id="carry"></g>
+        <g id="fx"></g>
+      </svg>
+    </section>
+
+    <section class="panel guide" aria-live="polite">
+      <p class="stepno" id="stepNo"></p>
+      <h2 id="title"></h2>
+      <p id="tip"></p>
+      <p class="turn" id="turn"></p>
+      <div class="timebar">
+        <div class="tb-row"><span id="barLabel">⏱ 3ぷん タイマー</span><b id="clock">3:00</b></div>
+        <div class="bar" role="progressbar" aria-label="3ぷん タイマー"><span id="barFill"></span></div>
+      </div>
+      <button class="big" id="okBtn" disabled>⭕ できた！ つぎへ</button>
+    </section>
+  </div>
+</main>
+
+<div class="over" id="startOver">
+  <div class="card">
+    <div class="emoji">🧸📚</div>
+    <h2>ひなこちゃん<br>おかたづけ しよう！</h2>
+    <p>ひなこちゃんの まねっこ してね。</p>
+    <button class="big" id="startBtn">はじめる</button>
+  </div>
+</div>
+
+<div class="over" id="doneOver" hidden>
+  <div class="card" role="dialog" aria-labelledby="doneTitle">
+    <div class="starrow" id="starRow"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+    <h2 id="doneTitle">ぜんぶ かたづいたね！</h2>
+    <p>おへやが ぴかぴか！<br>ひなこちゃん すごい！</p>
+    <button class="big" id="replayBtn">さいしょから</button>
+  </div>
+</div>
+
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+(function(){
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = id => document.getElementById(id);
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const mk = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for(const k in attrs) e.setAttribute(k, attrs[k]);
+    if(parent) parent.appendChild(e);
+    return e;
+  };
+
+  /* ---------- static decoration ---------- */
+  (function(){
+    const books = $("books");
+    const colors = ["#FFE066","#58C27D","#FFFFFF","#E8453C","#4F8CE8","#F2C14E","#FF8FB8","#FFFFFF","#8BD3E6","#FFCF2E","#E8453C","#B07CE0"];
+    let x = 400, i = 0;
+    while(x < 700){
+      const w = 10 + (i*7 % 14), h = 104 + (i*37 % 46);
+      mk("rect", { x, y:200-h, width:w, height:h, fill:colors[i % colors.length], stroke:"#00000022", "stroke-width":1 }, books);
+      if(w > 16) mk("rect", { x:x+3, y:200-h+14, width:w-6, height:8, rx:2, fill:"#ffffffaa" }, books);
+      x += w + 1; i++;
+    }
+    const dh = $("dollhouses");
+    [[258,140],[404,140],[550,148]].forEach(([x0, w], n) => {
+      const top = n === 2 ? 236 : 256;
+      mk("rect", { x:x0, y:top+18, width:w, height:360-top-18, fill:"#F4E7C8", stroke:"#D9C79E", "stroke-width":2 }, dh);
+      mk("path", { d:`M${x0-8} ${top+22} L${x0+w/2} ${top-14} L${x0+w+8} ${top+22} Z`, fill:"#C8313F" }, dh);
+      mk("rect", { x:x0+6, y:top+70, width:w-12, height:8, fill:"#7A4A30" }, dh);
+      mk("rect", { x:x0+6, y:352, width:w-12, height:8, fill:"#7A4A30" }, dh);
+      [[0.25,top+34],[0.62,top+34]].forEach(([fx, wy]) => {
+        mk("rect", { x:x0+w*fx, y:wy, width:22, height:24, fill:"#fff", stroke:"#C9B68A", "stroke-width":2 }, dh);
+        mk("path", { d:`M${x0+w*fx+11} ${wy}V${wy+24}M${x0+w*fx} ${wy+12}H${x0+w*fx+22}`, stroke:"#C9B68A", "stroke-width":1.5 }, dh);
+      });
+    });
+    const mp = $("matPattern");
+    [[150,520],[240,585],[330,500],[470,590],[690,505],[760,580],[560,560]].forEach(([tx, ty], n) => {
+      if(n % 2){ mk("path", { d:`M${tx-10} ${ty} L${tx} ${ty-22} L${tx+10} ${ty} Z` }, mp); mk("rect", { x:tx-1.5, y:ty, width:3, height:8 }, mp); }
+      else mk("path", { d:`M${tx-12} ${ty} V${ty-12} L${tx} ${ty-22} L${tx+12} ${ty-12} V${ty} Z` }, mp);
+    });
+    const lace = $("lace");
+    for(let lx=-52; lx<=52; lx+=8) mk("circle", { cx:lx, cy:-29 + Math.abs(lx)/30, r:4.5 }, lace);
+  })();
+
+  /* ---------- things to tidy ---------- */
+  const art = {
+    book: (bg, band, edge) => `<rect x="-34" y="-44" width="68" height="88" rx="4" fill="${bg}" stroke="${edge}" stroke-width="2"/>
+      <rect x="-26" y="-34" width="52" height="16" rx="3" fill="${band}"/>
+      <circle cx="-12" cy="2" r="9" fill="#FFCF2E"/><circle cx="10" cy="8" r="8" fill="#7EC8F5"/><circle cx="-2" cy="24" r="8" fill="#FF8FB8"/>`,
+    paper: (dark) => dark
+      ? `<rect x="-28" y="-36" width="56" height="72" rx="3" fill="#2C2C30"/><rect x="-20" y="-28" width="40" height="9" fill="#FFB84D"/><circle cx="0" cy="8" r="10" fill="#8BD3E6"/>`
+      : `<rect x="-28" y="-36" width="56" height="72" rx="3" fill="#fff" stroke="#CFCFCF" stroke-width="1.5"/>
+         <path d="M-20 -22h40M-20 -12h36M-20 -2h40M-20 8h30M-20 18h38" stroke="#B9BEC4" stroke-width="2"/>`,
+    ladder: () => `<rect x="-10" y="-25" width="4" height="50" fill="#C68A4A"/><rect x="6" y="-25" width="4" height="50" fill="#C68A4A"/>
+      <path d="M-8 -18H8M-8 -8H8M-8 2H8M-8 12H8M-8 22H8" stroke="#C68A4A" stroke-width="3"/>`,
+    bed: () => `<rect x="-24" y="-18" width="6" height="26" rx="2" fill="#fff" stroke="#C9C3BD"/>
+      <rect x="-22" y="-4" width="46" height="12" rx="3" fill="#fff" stroke="#C9C3BD"/>
+      <rect x="-16" y="-10" width="12" height="8" rx="3" fill="#fff" stroke="#C9C3BD"/>
+      <rect x="-4" y="-11" width="28" height="10" rx="3" fill="#FF9EC4"/>`,
+    sofa: () => `<rect x="-20" y="-16" width="40" height="12" rx="5" fill="#E86A9A"/>
+      <rect x="-20" y="-6" width="40" height="14" rx="4" fill="#FF8FB8"/>
+      <circle cx="-20" cy="-2" r="6" fill="#E86A9A"/><circle cx="20" cy="-2" r="6" fill="#E86A9A"/>`,
+    cat: () => `<path d="M-10 18 L-7 -2 H7 L10 18 Z" fill="#FF9EC4"/>
+      <circle cx="0" cy="-10" r="10" fill="#fff" stroke="#C9C3BD"/>
+      <path d="M-9 -16 L-8 -24 L-2 -19 Z M9 -16 L8 -24 L2 -19 Z" fill="#fff" stroke="#C9C3BD"/>
+      <circle cx="-4" cy="-10" r="1.5" fill="#333"/><circle cx="4" cy="-10" r="1.5" fill="#333"/><circle cx="0" cy="-6" r="1.4" fill="#E86A82"/>`,
+    rabbit: () => `<path d="M-10 18 L-7 -2 H7 L10 18 Z" fill="#7EB8E8"/>
+      <ellipse cx="-4" cy="-26" rx="3.5" ry="10" fill="#E8D2B0"/><ellipse cx="4" cy="-26" rx="3.5" ry="10" fill="#E8D2B0"/>
+      <circle cx="0" cy="-10" r="10" fill="#E8D2B0"/>
+      <circle cx="-4" cy="-10" r="1.5" fill="#333"/><circle cx="4" cy="-10" r="1.5" fill="#333"/><circle cx="0" cy="-6" r="1.4" fill="#C9786A"/>`,
+    car: () => `<g transform="translate(0,16)">
+      <path d="M-58 0 Q-60 -26 -40 -30 L-24 -48 H22 L40 -30 Q60 -28 60 0 Z" fill="#FF8FB8" stroke="#E2457F" stroke-width="2.5"/>
+      <path d="M-20 -44 H18 L30 -30 H-32 Z" fill="#E8D2B0"/>
+      <rect x="-26" y="-40" width="16" height="12" rx="3" fill="#D9BC92"/><rect x="8" y="-40" width="16" height="12" rx="3" fill="#D9BC92"/>
+      <circle cx="-34" cy="2" r="14" fill="#555"/><circle cx="-34" cy="2" r="6" fill="#ddd"/>
+      <circle cx="36" cy="2" r="14" fill="#555"/><circle cx="36" cy="2" r="6" fill="#ddd"/>
+      <circle cx="52" cy="-16" r="4" fill="#FFE066"/></g>`,
+    paperBag: () => `<ellipse cx="-12" cy="-38" rx="16" ry="9" fill="#4C7A4C"/><ellipse cx="12" cy="-40" rx="14" ry="11" fill="#E4E4E4"/>
+      <path d="M-40 -38 H40 L43 38 H-43 Z" fill="#C9955A" stroke="#A8763E" stroke-width="2"/>
+      <ellipse cx="0" cy="2" rx="24" ry="11" fill="#2E2A28"/>`,
+    blackBag: () => `<rect x="-56" y="-28" width="112" height="56" rx="8" fill="#26262A"/>
+      <rect x="-56" y="12" width="112" height="16" rx="4" fill="url(#houndstooth)"/>
+      <rect x="-14" y="-12" width="28" height="6" rx="3" fill="#C9A15E"/>`,
+    ball: () => `<circle r="13" fill="#E8453C"/><path d="M-12 -4 Q0 6 12 -4" stroke="#fff" stroke-width="3" fill="none"/>`,
+    block: (c) => `<rect x="-12" y="-12" width="24" height="24" rx="4" fill="${c}" stroke="#00000033"/><circle r="5" fill="#ffffffbb"/>`,
+    crayon: () => `<rect x="-18" y="-5" width="30" height="10" rx="2" fill="#58C27D"/><path d="M12 -5 L22 0 L12 5 Z" fill="#3E8E4E"/><rect x="-10" y="-5" width="6" height="10" fill="#fff" opacity=".6"/>`,
+    brush: () => `<rect x="-4" y="2" width="8" height="26" rx="4" fill="#FF8FB8" transform="rotate(0)"/><ellipse cx="0" cy="-8" rx="14" ry="16" fill="#FF8FB8"/><ellipse cx="0" cy="-8" rx="9" ry="11" fill="#fff"/>
+      <g fill="#C9C3BD"><circle cx="-3" cy="-12" r="1.3"/><circle cx="3" cy="-12" r="1.3"/><circle cx="-3" cy="-5" r="1.3"/><circle cx="3" cy="-5" r="1.3"/></g>`,
+    wand: () => `<path d="M-14 16 L6 -6" stroke="#B07CE0" stroke-width="5" stroke-linecap="round"/>
+      <path d="M10 -24l4.1 8.3 9.2 1.3-6.6 6.5 1.6 9.1-8.3-4.3-8.3 4.3 1.6-9.1-6.6-6.5 9.2-1.3z" fill="#FFD84D" stroke="#E0A800" stroke-width="1.5"/>`,
+    doll: () => `<path d="M-9 16 L-6 -2 H6 L9 16 Z" fill="#FF8FB8"/><circle cx="0" cy="-9" r="8" fill="#FFE1CF"/>
+      <path d="M-9 -8 Q-10 -20 0 -19 Q10 -20 9 -8 Q6 -14 0 -14 Q-6 -14 -9 -8 Z" fill="#FFD84D"/>`
+  };
+
+  // m: ちらかった いち [x, y, まわす, おおきさ]、 t: かたづけた いち [x, y, まわす, よこ, たて]
+  const ITEMS = [
+    // 1 えほん → たなの したに たてる
+    { step:0, svg:art.book("#FFE8A8","#E8453C","#E0B850"), m:[175,560,-16,1], t:[592,424,0,.3,1], dst:"under" },
+    { step:0, svg:art.book("#BFE3FF","#4F8CE8","#7EAFD8"), m:[530,575,22,1],  t:[612,424,0,.3,1], dst:"under" },
+    { step:0, svg:art.book("#FFD0E4","#E2557F","#E9A0BF"), m:[690,520,-8,1],  t:[632,424,0,.3,1], dst:"under" },
+    // 2 プリント → ひだりの たなの 「ぷりんと」ボックス
+    { step:1, svg:art.paper(false), m:[255,540,-28,1], t:[-76,222,-4,.55,.55], dst:"print" },
+    { step:1, svg:art.paper(true),  m:[300,585,14,1],  t:[-72,221,3,.55,.55],  dst:"print" },
+    { step:1, svg:art.paper(false), m:[480,520,34,1],  t:[-68,220,-2,.55,.55], dst:"print" },
+    { step:1, svg:art.paper(false), m:[620,580,-12,1], t:[-74,219,2,.55,.55],  dst:"print" },
+    { step:1, svg:art.paper(false), m:[760,545,22,1],  t:[-70,218,-3,.55,.55], dst:"print" },
+    // 3 シルバニア → おもちゃばこ
+    { step:2, svg:art.ladder(), m:[220,500,70,1],  t:[-88,472,-25,.7,.7], dst:"toy" },
+    { step:2, svg:art.bed(),    m:[575,505,-15,1], t:[-10,478,8,.75,.75], dst:"toy" },
+    { step:2, svg:art.sofa(),   m:[655,590,12,1],  t:[30,480,-5,.8,.8], dst:"toy" },
+    { step:2, svg:art.cat(),    m:[320,525,-25,1], t:[62,474,10,.9,.9], dst:"toy" },
+    { step:2, svg:art.rabbit(), m:[470,560,30,1],  t:[80,470,-8,.9,.9], dst:"toy" },
+    { step:2, svg:art.car(),    m:[600,540,-8,.8], t:[-50,470,-6,.5,.5], dst:"toy" },
+    // 4 バッグ → ひだりの たなの まんなか
+    { step:3, svg:art.paperBag(), m:[240,555,-78,.85], t:[-92,324,0,.55,.55], dst:"lshelf" },
+    { step:3, svg:art.blackBag(), m:[715,575,14,.85],  t:[-44,337,0,.42,.42], dst:"lshelf" },
+    // 5 ちいさい おもちゃ → おもちゃばこ
+    { step:4, svg:art.ball(),            m:[505,590,0,1],   t:[-60,486,0,.9,.9], dst:"toy" },
+    { step:4, svg:art.block("#FFCF2E"),  m:[150,585,20,1],  t:[-30,486,10,.9,.9], dst:"toy" },
+    { step:4, svg:art.block("#4F8CE8"),  m:[775,590,-15,1], t:[10,488,-8,.9,.9], dst:"toy" },
+    { step:4, svg:art.crayon(),          m:[330,585,40,1],  t:[45,488,-30,.9,.9], dst:"toy" },
+    { step:4, svg:art.brush(),           m:[640,500,-35,1], t:[-95,478,20,.7,.7], dst:"toy" },
+    { step:4, svg:art.wand(),            m:[470,495,25,1],  t:[-5,470,-10,.8,.8], dst:"toy" },
+    { step:4, svg:art.doll(),            m:[300,495,-20,1], t:[70,486,0,.9,.9], dst:"toy" }
+  ];
+  const tf = (x, y, r, sx, sy) => `translate(${x}px,${y}px) rotate(${r}deg) scale(${sx},${sy === undefined ? sx : sy})`;
+  const messT = it => tf(it.m[0], it.m[1], it.m[2], it.m[3]);
+  const tidyT = it => tf(...it.t);
+  // あとの だんかいの ものほど したに おく
+  [...ITEMS].sort((a, b) => b.step - a.step).forEach(it => {
+    it.el = mk("g", { class:"mv" });
+    it.el.innerHTML = it.svg;
+  });
+
+  /* ---------- steps ---------- */
+  const STEPS = [
+    { chip:"えほん", title:"えほんを かたづけよう",
+      tip:"ゆかの えほんを ひろって、たなの したに たてて ならべよう。",
+      voice:"えほんを かたづけよう。たなの したに たてて ならべてね。" },
+    { chip:"プリント", title:"プリントを かたづけよう",
+      tip:"ちらばった プリントを あつめて、ひだりの たなの 「ぷりんと」ボックスに いれよう。",
+      voice:"プリントを あつめて、ひだりの たなに しまおう。" },
+    { chip:"シルバニア", title:"シルバニアを かたづけよう",
+      tip:"にんぎょうや かぐ、くるまを おもちゃばこへ ないない！",
+      voice:"シルバニアを おもちゃばこに かたづけよう。" },
+    { chip:"バッグ", title:"バッグを かたづけよう",
+      tip:"かみぶくろと くろい バッグを、ひだりの たなに きちんと しまおう。",
+      voice:"バッグを ひだりの たなに しまおう。" },
+    { chip:"おもちゃ", title:"ちいさい おもちゃを かたづけよう",
+      tip:"ボールや つみき、ブラシを おもちゃばこへ ないない！",
+      voice:"ちいさい おもちゃを おもちゃばこに ないない しよう。" },
+    { chip:"かくにん", title:"ぜんぶ かたづいた？",
+      tip:"ゆかに おもちゃが おちていないか、しっかり かくにん しよう！",
+      voice:"ぜんぶ かたづいたかな？ ゆかに おもちゃが おちていないか、しっかり かくにん しよう！" }
+  ];
+
+  /* ---------- sound & voice ---------- */
+  let soundOn = true, actx = null;
+  function ac(){
+    try{
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if(actx.state === "suspended") actx.resume();
+    }catch(e){ actx = null; }
+    return actx;
+  }
+  function tone(freq, dur, opt){
+    const o0 = Object.assign({ type:"sine", gain:.18, to:0, delay:0 }, opt);
+    const c = soundOn && ac(); if(!c) return;
+    try{
+      const t = c.currentTime + o0.delay;
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = o0.type; o.frequency.setValueAtTime(freq, t);
+      if(o0.to) o.frequency.exponentialRampToValueAtTime(o0.to, t + dur);
+      g.gain.setValueAtTime(.0001, t);
+      g.gain.exponentialRampToValueAtTime(o0.gain, t + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + .05);
+    }catch(e){}
+  }
+  const sfx = {
+    pick:  () => tone(420, .16, { to:880, gain:.2 }),
+    place: () => { tone(660, .12, { type:"triangle", gain:.18 }); tone(990, .16, { type:"triangle", gain:.15, delay:.08 }); },
+    step:  () => tone(180, .07, { to:120, type:"triangle", gain:.14 }),
+    ask:   () => [784, 659, 784, 988].forEach((f, i) => tone(f, .2, { type:"triangle", gain:.18, delay:i*.15 })),
+    ok:    () => [523, 659, 784].forEach((f, i) => tone(f, .22, { type:"triangle", gain:.16, delay:i*.09 })),
+    fanfare:() => [523,659,784,659,784,1047].forEach((f,i) => tone(f, i===5?.7:.22, { type:"triangle", gain:.2, delay:i*.14 }))
+  };
+  function speak(text){
+    if(!soundOn || !("speechSynthesis" in window)) return;
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ja-JP"; u.rate = .95; u.pitch = 1.3;
+      const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith("ja"));
+      if(v) u.voice = v;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  $("soundBtn").addEventListener("click", () => {
+    soundOn = !soundOn;
+    $("soundBtn").setAttribute("aria-pressed", soundOn);
+    $("soundBtn").textContent = soundOn ? "🔊 おと あり" : "🔈 おと なし";
+    if(!soundOn){ try{ speechSynthesis.cancel(); }catch(e){} }
+  });
+
+  /* ---------- animation helpers ---------- */
+  let runId = 0;
+  function tween(node, frames, opt){
+    const a = node.animate(frames, Object.assign({ duration:600, easing:"ease-in-out", fill:"forwards" }, opt));
+    return a.finished.then(() => { try{ a.commitStyles(); }catch(e){} a.cancel(); }, () => {});
+  }
+  function runner(){
+    const id = ++runId;
+    const chk = () => { if(id !== runId) throw "abort"; };
+    return {
+      tw: async (n, f, o) => { chk(); await tween(n, f, o); chk(); },
+      all: async (...ps) => { chk(); await Promise.all(ps); chk(); },
+      wait: async ms => { chk(); await sleep(ms); chk(); }
+    };
+  }
+  function pop(text, x, y, opt){
+    const o0 = Object.assign({ size:28, color:"#E2557F", hold:800 }, opt);
+    const t = mk("text", { x, y, "text-anchor":"middle", "font-size":o0.size, "font-weight":900, fill:o0.color,
+      stroke:"#fff", "stroke-width":6, "paint-order":"stroke", "font-family":"inherit", class:"ctr" }, $("fx"));
+    t.textContent = text;
+    const total = 350 + o0.hold + 350;
+    t.animate([
+      { transform:"scale(.2)", opacity:0 },
+      { transform:"scale(1.15)", opacity:1, offset:250/total },
+      { transform:"scale(1)", opacity:1, offset:350/total },
+      { transform:"scale(1) translateY(0px)", opacity:1, offset:(350+o0.hold)/total },
+      { transform:"scale(1) translateY(-14px)", opacity:0 }
+    ], { duration:total, easing:"ease-out", fill:"forwards" }).finished.then(() => t.remove(), () => t.remove());
+  }
+  function sparkle(x, y, n){
+    for(let i=0;i<n;i++){
+      const s = mk("text", { x, y, "font-size":18, "text-anchor":"middle", fill:["#FFC21A","#FF7FA6","#4FA3E8"][i%3] }, $("fx"));
+      s.textContent = "★";
+      const a = Math.PI*2*i/n, r = 34 + Math.random()*18;
+      s.animate([{ transform:"translate(0px,0px) scale(.3)", opacity:1 },
+                 { transform:`translate(${Math.cos(a)*r}px,${Math.sin(a)*r}px) scale(1)`, opacity:0 }],
+        { duration:750, easing:"ease-out", fill:"forwards" }).finished.then(() => s.remove(), () => s.remove());
+    }
+  }
+  function happy(on){
+    $("eyesOpen").style.display = on ? "none" : "";
+    $("eyesHappy").style.display = on ? "" : "none";
+    $("armPeace").style.display = on ? "" : "none";
+    $("armRDown").style.display = on ? "none" : "";
+  }
+
+  // ひなこの いち
+  // さいしょは まんなか、かたづけた あとは みぎはしで まつ（かたづけた ものを かくさない）
+  const HOME = 400, REST = 715, HY = 592, HS = 1.05;
+  let hx = HOME;
+  const hPos = x => `translate(${x}px,${HY}px) scale(${HS})`;
+  const clampX = x => Math.max(-40, Math.min(720, x));
+  async function walkTo(r, x, carried){
+    x = clampX(x);
+    const dist = Math.abs(x - hx);
+    if(dist < 4) return;
+    const dur = Math.max(350, dist * 2.4);
+    const bob = $("hinakoBob").animate([{ transform:"translateY(0px)" }, { transform:"translateY(-8px)" }, { transform:"translateY(0px)" }],
+      { duration:300, iterations:Math.ceil(dur/300) });
+    const ticks = []; for(let t=0; t<dur; t+=300) ticks.push(setTimeout(sfx.step, t));
+    const jobs = [tween($("hinakoPos"), [{ transform:hPos(hx) }, { transform:hPos(x) }], { duration:dur, easing:"ease-in-out" })];
+    if(carried) jobs.push(tween(carried.el, [{ transform:carryT(carried, hx) }, { transform:carryT(carried, x) }], { duration:dur, easing:"ease-in-out" }));
+    try{ await r.all(...jobs); }
+    finally{ bob.cancel(); ticks.forEach(clearTimeout); }
+    hx = x;
+  }
+  const CARRY_Y = 510; // おなかの まえで もつ
+  const carryT = (it, x) => tf(x, CARRY_Y, 0, Math.min(it.m[3], it.step === 3 ? .7 : 1));
+
+  async function tidyItem(r, it){
+    await walkTo(r, it.m[0]);
+    sfx.pick();
+    $("carry").appendChild(it.el);
+    await r.tw(it.el, [{ transform:messT(it) }, { transform:tf((it.m[0]+hx)/2, Math.min(it.m[1], CARRY_Y) - 60, it.m[2]/2, it.m[3]) , offset:.5 }, { transform:carryT(it, hx) }], { duration:450 });
+    await walkTo(r, it.t[0], it);
+    await r.tw(it.el, [{ transform:carryT(it, hx) }, { transform:tf((hx+it.t[0])/2, Math.min(CARRY_Y, it.t[1]) - 50, 0, it.t[3], it.t[4]), offset:.5 }, { transform:tidyT(it) }], { duration:500 });
+    $("dst-" + it.dst).appendChild(it.el);
+    sfx.place();
+    sparkle(it.t[0], it.t[1], 5);
+  }
+
+  async function playCheck(r, celebrate){
+    const lens = $("lens");
+    lens.style.opacity = 1;
+    const path = [[150,520],[330,560],[520,515],[720,560],[600,590],[300,590]];
+    let prev = path[0];
+    lens.style.transform = `translate(${prev[0]}px,${prev[1]}px)`;
+    for(const p of path.slice(1)){
+      await r.tw(lens, [{ transform:`translate(${prev[0]}px,${prev[1]}px)` }, { transform:`translate(${p[0]}px,${p[1]}px)` }], { duration:700 });
+      pop("✓", p[0], p[1] - 40, { size:30, color:"#2F9E5A", hold:300 });
+      tone(880, .1, { type:"triangle", gain:.12 });
+      prev = p;
+    }
+    await r.tw(lens, [{ opacity:1 }, { opacity:0 }], { duration:300 });
+    if(!celebrate) return;
+    happy(true);
+    sfx.ok();
+    pop("ゆかに なにも ないね！", 400, 120, { size:30, hold:1400 });
+    sparkle(400, 470, 10);
+    await r.wait(1600);
+    happy(false);
+  }
+
+  // 3ぷんの あいだも、いっしょに かたづけている うごきを つづける
+  const STEP_MS = 180000;
+  const BUSY_WORDS = ["よいしょ", "ふんふん♪", "どこかな？", "きれいに なあれ", "あった！"];
+  const CHEER_WORDS = ["がんばれ！", "いっしょに がんばろう！", "きれいに なってきたね", "あと すこし！"];
+  const CHECK_WORDS = ["よーく みて", "おちてないかな？", "ここも だいじょうぶ！"];
+  async function crouch(r){
+    await r.tw($("hinakoBob"), [
+      { transform:"translateY(0px) scale(1,1)" },
+      { transform:"translateY(0px) scale(1.05,.86)", offset:.45 },
+      { transform:"translateY(0px) scale(1,1)" }
+    ], { duration:700 });
+  }
+  async function busyUntil(r, until, words){
+    while(Date.now() < until - 2500){
+      await walkTo(r, 120 + Math.random()*560);
+      await crouch(r);
+      pop(words[Math.floor(Math.random()*words.length)], hx, 285, { size:24, color:"#2F7CC0", hold:700 });
+      if(words === BUSY_WORDS) sparkle(hx, 560, 4);
+      await r.wait(900 + Math.random()*900);
+    }
+    const left = until - Date.now();
+    if(left > 0) await r.wait(left);
+  }
+
+  /* ---------- state ---------- */
+  function setState(i){
+    runId++;
+    document.getAnimations().forEach(a => { try{ a.cancel(); }catch(e){} });
+    $("fx").innerHTML = "";
+    // ちらかって いる ものは あとの だんかいほど したに
+    [...ITEMS].sort((a, b) => b.step - a.step).forEach(it => {
+      if(it.step < i){ $("dst-" + it.dst).appendChild(it.el); it.el.style.transform = tidyT(it); }
+      else { $("mess").appendChild(it.el); it.el.style.transform = messT(it); }
+    });
+    hx = HOME;
+    $("hinakoPos").style.transform = hPos(hx);
+    $("hinakoBob").style.transform = "none";
+    $("lens").style.opacity = 0;
+    happy(i >= STEPS.length);
+  }
+
+  /* ---------- progress / jump ---------- */
+  const stepsUl = $("steps");
+  const chips = STEPS.map((s, i) => {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.innerHTML = `<span class="n"><span>${i+1}</span></span>${s.chip}`;
+    b.addEventListener("click", () => { $("doneOver").hidden = true; $("startOver").hidden = true; ac(); show(i); });
+    li.appendChild(b); stepsUl.appendChild(li);
+    return b;
+  });
+  function paintChips(cur){
+    chips.forEach((c, i) => {
+      c.classList.toggle("fin", i < cur);
+      c.classList.toggle("now", i === cur);
+      c.setAttribute("aria-current", i === cur ? "step" : "false");
+    });
+  }
+
+  /* ---------- 3ぷん タイマー: いっぱいに なったら 「かたづいたかな？」 ---------- */
+  let started = 0, cycle = 0, clockTimer = 0, labelTimer = 0;
+  const fmt = sec => `${Math.floor(sec/60)}:${String(sec%60).padStart(2, "0")}`;
+  function setBar(f, jump){
+    const b = $("barFill");
+    if(jump){ b.style.transition = "none"; b.style.width = f*100 + "%"; void b.offsetWidth; b.style.transition = ""; }
+    else b.style.width = f*100 + "%";
+  }
+  function startClock(){
+    started = Date.now(); cycle = 0;
+    clearInterval(clockTimer);
+    setBar(0, true);
+    tickClock();
+    clockTimer = setInterval(tickClock, 500);
+  }
+  function tickClock(){
+    const ms = Date.now() - started;
+    const c = Math.floor(ms / STEP_MS), inCycle = ms - c*STEP_MS;
+    if(c > cycle){ cycle = c; askNow(); setBar(0, true); }
+    setBar(inCycle / STEP_MS);
+    $("clock").textContent = fmt(Math.ceil((STEP_MS - inCycle) / 1000));
+  }
+  function askNow(){
+    sfx.ask();
+    speak("かたづいたかな？");
+    const l = $("barLabel");
+    l.textContent = "かたづいたかな？ 👀"; l.classList.add("ask");
+    clearTimeout(labelTimer);
+    labelTimer = setTimeout(() => { l.textContent = "⏱ 3ぷん タイマー"; l.classList.remove("ask"); }, 15000);
+  }
+
+  /* ---------- flow ---------- */
+  let cur = 0;
+  const okBtn = $("okBtn"), turn = $("turn");
+  async function show(i){
+    cur = i;
+    const s = STEPS[i];
+    setState(i);
+    paintChips(i);
+    $("stepNo").textContent = `${i+1} / ${STEPS.length}`;
+    $("title").textContent = s.title;
+    $("tip").textContent = s.tip;
+    okBtn.textContent = i === STEPS.length-1 ? "⭕ ぜんぶ かたづいた！" : "⭕ できた！ つぎへ";
+    okBtn.disabled = false; okBtn.classList.add("ready");
+    turn.textContent = i === STEPS.length-1 ? "いっしょに かくにん しよう！" : "いっしょに かたづけよう！";
+    turn.className = "turn go";
+    speak(s.voice);
+    startClock();
+    const r = runner();
+    try{
+      await r.wait(900);
+      if(i < STEPS.length-1){
+        // 3ぷんの なかで ひとつずつ かたづけて、あいだも うごいている
+        const list = ITEMS.filter(it => it.step === i);
+        const t0 = Date.now(), gap = (STEP_MS - 25000) / list.length;
+        for(let k=0; k<list.length; k++){
+          if(k) await busyUntil(r, t0 + k*gap, BUSY_WORDS);
+          await tidyItem(r, list[k]);
+        }
+        await walkTo(r, REST);
+        happy(true);
+        pop("かたづいた！", REST, 285, { size:32 });
+        await r.wait(1500);
+        happy(false);
+        for(;;) await busyUntil(r, Date.now() + 8000, CHEER_WORDS);
+      } else {
+        await playCheck(r, true);
+        for(;;){
+          await busyUntil(r, Date.now() + 6000, CHECK_WORDS);
+          await playCheck(r, false);
+        }
+      }
+    }catch(e){ if(e === "abort") return; throw e; }
+  }
+  function complete(){
+    if(cur < STEPS.length-1){ sfx.ok(); show(cur+1); }
+    else finish();
+  }
+  okBtn.addEventListener("click", () => { if(!okBtn.disabled) complete(); });
+
+  function confetti(n){
+    const box = $("confetti");
+    const colors = ["#FF7FA6","#FFD84D","#4FA3E8","#7BD389","#FFB84D"];
+    for(let i=0;i<n;i++){
+      const c = document.createElement("i");
+      c.style.left = Math.random()*100 + "vw";
+      c.style.background = colors[i % colors.length];
+      c.style.animationDuration = (1.6 + Math.random()*1.4) + "s";
+      c.style.animationDelay = (Math.random()*.4) + "s";
+      box.appendChild(c);
+      setTimeout(() => c.remove(), 3500);
+    }
+  }
+  function finish(){
+    clearInterval(clockTimer);
+    setBar(1);
+    setState(STEPS.length);
+    paintChips(STEPS.length);
+    okBtn.disabled = true; okBtn.classList.remove("ready");
+    const stars = [...$("starRow").children];
+    stars.forEach(s => s.classList.remove("on"));
+    $("doneOver").hidden = false;
+    stars.forEach((s, i) => setTimeout(() => { s.classList.add("on"); tone(660 + i*90, .15, { type:"triangle", gain:.15 }); }, 300 + i*200));
+    setTimeout(sfx.fanfare, 1500);
+    confetti(80);
+    speak("ぜんぶ かたづいたね！ おへやが ぴかぴか！ ひなこちゃん すごい！");
+  }
+
+  $("startBtn").addEventListener("click", () => { ac(); $("startOver").hidden = true; show(0); });
+  $("replayBtn").addEventListener("click", () => { $("doneOver").hidden = true; show(0); });
+
+  // さいしょの えは ちらかった おへや
+  setState(0);
+  paintChips(0);
+  $("stepNo").textContent = `1 / ${STEPS.length}`;
+  $("title").textContent = STEPS[0].title;
+  $("tip").textContent = STEPS[0].tip;
+})();
+</script>
+</body>
+</html>
